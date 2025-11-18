@@ -20,25 +20,62 @@ class RegisteredUserController extends Controller
         return view('auth.register');
     }
 
+    public function showOtpForm(): View
+    {
+        if (!session('registration_data')) {
+            return redirect()->route('register')->with('error', 'Silakan isi form registrasi terlebih dahulu.');
+        }
+        
+        return view('auth.register-otp');
+    }
+
+    public function completeRegistration(Request $request): RedirectResponse
+    {
+        $registrationData = session('registration_data');
+        
+        if (!$registrationData) {
+            return redirect()->route('register')->with('error', 'Data registrasi tidak ditemukan. Silakan daftar ulang.');
+        }
+
+        try {
+            // Create user after OTP verification
+            $user = Pengguna::create([
+                'nama' => $registrationData['name'],
+                'email' => $registrationData['email'],
+                'password_hash' => Hash::make($registrationData['password']),
+                'role' => 'pendaftar',
+            ]);
+
+            // Clear registration session
+            session()->forget(['registration_data', 'registration_step']);
+
+            event(new Registered($user));
+
+            return redirect()->route('login')->with('success', 'Akun berhasil dibuat! Silakan login untuk melanjutkan.');
+        } catch (\Exception $e) {
+            return redirect()->route('register')->withErrors(['email' => 'Terjadi kesalahan saat membuat akun. Silakan coba lagi.']);
+        }
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:pengguna,email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', 'min:8'],
         ]);
 
-        // Create user langsung
-        $user = Pengguna::create([
-            'nama' => $request->name,
-            'email' => $request->email,
-            'password_hash' => Hash::make($request->password),
-            'role' => 'pendaftar',
+        // Store registration data in session for OTP verification
+        session([
+            'registration_data' => [
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => $request->password,
+            ],
+            'registration_step' => 'otp_verification'
         ]);
 
-        event(new Registered($user));
-
-        return redirect('/otp-login')->with('success', 'Akun berhasil dibuat! Silakan login dengan OTP.');
+        return redirect('/register/otp')->with('success', 'Data registrasi tersimpan. Silakan verifikasi dengan OTP untuk menyelesaikan pendaftaran.');
     }
 
 

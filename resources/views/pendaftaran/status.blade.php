@@ -1,54 +1,99 @@
-@extends('layouts.app')
+@extends('layouts.main')
 
 @section('title', 'Status Pendaftaran - PPDB Online')
 
 @section('content')
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="bg-white rounded-lg shadow-sm p-6">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">
-            <i class="fas fa-clipboard-check mr-2 text-blue-600"></i>
-            Status Pendaftaran
-        </h1>
-        
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div class="flex items-center">
-                <i class="fas fa-info-circle text-blue-600 mr-3"></i>
-                <div>
-                    <h3 class="font-semibold text-blue-900">Status: Menunggu Verifikasi</h3>
-                    <p class="text-sm text-blue-800">Data Anda sedang dalam proses verifikasi administrasi</p>
-                </div>
-            </div>
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-clipboard-check me-2"></i>
+                Status Pendaftaran
+            </h4>
         </div>
+        <div class="card-body">
+            @if($pendaftar)
+                <div class="alert alert-info mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle me-3"></i>
+                        <div>
+                            <h5 class="mb-1">No. Pendaftaran: {{ $pendaftar->no_pendaftaran }}</h5>
+                            <p class="mb-0">Status: <strong>{{ $pendaftar->status }}</strong></p>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="space-y-4">
-            <div class="flex items-center">
-                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-4">
-                    <i class="fas fa-check text-white text-sm"></i>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Data Siswa</h6>
+                        @if($pendaftar->dataSiswa)
+                            <p><strong>Nama:</strong> {{ $pendaftar->dataSiswa->nama }}</p>
+                            <p><strong>NIK:</strong> {{ $pendaftar->dataSiswa->nik }}</p>
+                            <p><strong>NISN:</strong> {{ $pendaftar->dataSiswa->nisn }}</p>
+                        @else
+                            <p class="text-muted">Data belum lengkap</p>
+                        @endif
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Jurusan</h6>
+                        @if($pendaftar->jurusan)
+                            <p><strong>{{ $pendaftar->jurusan->nama }}</strong></p>
+                        @else
+                            <p class="text-muted">Belum dipilih</p>
+                        @endif
+                    </div>
                 </div>
-                <div>
-                    <h4 class="font-semibold text-gray-900">Formulir Pendaftaran</h4>
-                    <p class="text-sm text-gray-600">Data berhasil dikirim</p>
+
+                <hr>
+
+                <h6>Progress Pendaftaran</h6>
+                <div class="list-group">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Data Pendaftaran</span>
+                        @if($pendaftar->dataSiswa)
+                            <span class="badge bg-success">Selesai</span>
+                        @else
+                            <span class="badge bg-secondary">Belum</span>
+                        @endif
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Upload Berkas</span>
+                        @if($pendaftar->berkas && $pendaftar->berkas->count() > 0)
+                            <span class="badge bg-success">Selesai</span>
+                        @else
+                            <span class="badge bg-secondary">Belum</span>
+                        @endif
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Verifikasi Data</span>
+                        <span class="badge bg-{{ $pendaftar->status_data == 'VERIFIED' ? 'success' : ($pendaftar->status_data == 'REJECTED' ? 'danger' : 'warning') }}">
+                            {{ $pendaftar->status_data ?? 'Pending' }}
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Verifikasi Berkas</span>
+                        <span class="badge bg-{{ $pendaftar->status_berkas == 'VERIFIED' ? 'success' : ($pendaftar->status_berkas == 'REJECTED' ? 'danger' : 'warning') }}">
+                            {{ $pendaftar->status_berkas ?? 'Pending' }}
+                        </span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>Verifikasi Pembayaran</span>
+                        <span class="badge bg-{{ $pendaftar->status_payment == 'VERIFIED' ? 'success' : ($pendaftar->status_payment == 'REJECTED' ? 'danger' : 'warning') }}">
+                            {{ $pendaftar->status_payment ?? 'Pending' }}
+                        </span>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="flex items-center">
-                <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center mr-4">
-                    <i class="fas fa-clock text-white text-sm"></i>
+            @else
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Anda belum memiliki data pendaftaran.
                 </div>
-                <div>
-                    <h4 class="font-semibold text-gray-900">Verifikasi Administrasi</h4>
-                    <p class="text-sm text-gray-600">Sedang dalam proses verifikasi</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center">
-                <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-4">
-                    <i class="fas fa-credit-card text-white text-sm"></i>
-                </div>
-                <div>
-                    <h4 class="font-semibold text-gray-900">Pembayaran</h4>
-                    <p class="text-sm text-gray-600">Menunggu verifikasi administrasi</p>
-                </div>
+            @endif
+
+            <div class="mt-4">
+                <a href="/dashboard/pendaftar" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Kembali ke Dashboard
+                </a>
             </div>
         </div>
     </div>

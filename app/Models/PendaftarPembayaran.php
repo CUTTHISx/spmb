@@ -11,10 +11,12 @@ class PendaftarPembayaran extends Model
     
     protected $fillable = [
         'pendaftar_id',
-        'bukti_pembayaran',
-        'nama_pengirim',
-        'tanggal_transfer',
         'nominal',
+        'tgl_bayar',
+        'tanggal_transfer',
+        'nama_pengirim',
+        'bukti_bayar',
+        'bukti_pembayaran',
         'catatan',
         'status_verifikasi'
     ];

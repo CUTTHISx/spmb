@@ -3,6 +3,7 @@
 @section('title', 'Peta Sebaran Pendaftar - PPDB Online')
 
 @section('styles')
+<link rel="stylesheet" href="{{ asset('css/layouts/dashboard.css') }}">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
 #map { height: 500px; width: 100%; }
@@ -47,81 +48,163 @@
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
+
+.realtime-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: rgba(255,255,255,0.9);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.8em;
+}
+
+.realtime-indicator.active {
+    background: rgba(40, 167, 69, 0.9);
+    color: white;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
 </style>
 @endsection
 
 @section('content')
 <div class="container mt-4">
+    <!-- Stats Overview -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="fw-bold" id="totalPendaftar">0</h3>
+                            <p class="text-muted mb-0">Total Pendaftar</p>
+                        </div>
+                        <div class="stat-icon bg-primary-light">
+                            <i class="fas fa-users text-primary fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="fw-bold" id="totalKecamatan">0</h3>
+                            <p class="text-muted mb-0">Kecamatan</p>
+                        </div>
+                        <div class="stat-icon bg-success-light">
+                            <i class="fas fa-map-marker-alt text-success fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="fw-bold" id="totalKelurahan">0</h3>
+                            <p class="text-muted mb-0">Kelurahan</p>
+                        </div>
+                        <div class="stat-icon bg-info-light">
+                            <i class="fas fa-building text-info fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="fw-bold" id="lastUpdate">-</h3>
+                            <p class="text-muted mb-0">Update Terakhir</p>
+                        </div>
+                        <div class="stat-icon bg-warning-light">
+                            <i class="fas fa-clock text-warning fa-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <span class="realtime-indicator badge bg-success" id="realtimeStatus">
+                            <i class="fas fa-circle pulse"></i> Live
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Peta Sebaran Pendaftar</h5>
+            <div class="card system-status-card">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-map-marked-alt text-primary me-2"></i>
+                        Peta Sebaran Pendaftar Real-Time
+                    </h5>
                 </div>
                 <div class="card-body">
                     <!-- Filter Controls -->
                     <div class="row mb-3">
-                        <div class="col-md-3">
-                            <select class="form-select" id="filterJurusan">
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Filter Jurusan</label>
+                            <select class="form-select" id="filterJurusan" onchange="applyFilters()">
                                 <option value="">Semua Jurusan</option>
                                 <option value="PPLG">PPLG</option>
-                                <option value="DKV">DKV</option>
                                 <option value="AKUNTANSI">Akuntansi</option>
+                                <option value="DKV">DKV</option>
                                 <option value="ANIMASI">Animasi</option>
                                 <option value="BDP">BDP</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <select class="form-select" id="filterStatus">
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Status Pendaftar</label>
+                            <select class="form-select" id="filterStatus" onchange="applyFilters()">
                                 <option value="">Semua Status</option>
                                 <option value="DRAFT">Draft</option>
                                 <option value="SUBMITTED">Menunggu Verifikasi</option>
                                 <option value="VERIFIED_ADM">Terverifikasi</option>
-                                <option value="PAID">Terbayar</option>
+                                <option value="REJECTED">Ditolak</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-primary" onclick="updateMap()">
-                                <i class="fas fa-sync me-1"></i>Update Peta
-                            </button>
-                        </div>
-                        <div class="col-md-3 text-end">
-                            <button class="btn btn-success" onclick="exportData()">
-                                <i class="fas fa-download me-1"></i>Export Data
-                            </button>
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Kontrol Peta</label>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-primary flex-fill" onclick="refreshMap()">
+                                    <i class="fas fa-sync me-1"></i>Refresh
+                                </button>
+                                <div class="form-check form-switch d-flex align-items-center">
+                                    <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+                                    <label class="form-check-label ms-2" for="autoRefresh">Auto</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Map Container -->
-                    <div id="map"></div>
-
-                    <!-- Statistics Panel -->
-                    <div class="row mt-4">
-                        <div class="col-md-3">
-                            <div class="info-panel text-center">
-                                <h4 class="text-primary" id="totalPendaftar">0</h4>
-                                <small class="text-muted">Total Pendaftar</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-panel text-center">
-                                <h4 class="text-success" id="totalKecamatan">0</h4>
-                                <small class="text-muted">Kecamatan</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-panel text-center">
-                                <h4 class="text-info" id="totalKelurahan">0</h4>
-                                <small class="text-muted">Kelurahan</small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-panel text-center">
-                                <h4 class="text-warning" id="radiusTerjauh">0</h4>
-                                <small class="text-muted">Radius Terjauh (km)</small>
-                            </div>
-                        </div>
+                    <div style="position: relative;">
+                        <div id="map"></div>
                     </div>
+
+
                 </div>
             </div>
         </div>
@@ -130,24 +213,28 @@
     <!-- Detail Table -->
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Detail Sebaran per Wilayah</h6>
+            <div class="card system-status-card">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-table text-primary me-2"></i>
+                        Detail Sebaran per Wilayah
+                    </h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-hover" id="sebaranTable">
                             <thead>
                                 <tr>
+                                    <th>ID</th>
+                                    <th>Nama Pendaftar</th>
+                                    <th>Email</th>
+                                    <th>Jurusan</th>
+                                    <th>Status</th>
+                                    <th>Provinsi</th>
+                                    <th>Kabupaten</th>
                                     <th>Kecamatan</th>
                                     <th>Kelurahan</th>
-                                    <th>Jumlah Pendaftar</th>
-                                    <th>PPLG</th>
-                                    <th>DKV</th>
-                                    <th>Akuntansi</th>
-                                    <th>Animasi</th>
-                                    <th>BDP</th>
-                                    <th>Jarak Rata-rata</th>
+                                    <th>Tanggal Daftar</th>
                                 </tr>
                             </thead>
                             <tbody id="sebaranTableBody">
@@ -168,26 +255,40 @@
 let map;
 let markers = [];
 let sebaranData = [];
+let lastUpdateTimestamp = 0;
+let refreshInterval;
 
 // Initialize map
 function initMap() {
-    map = L.map('map').setView([-6.942100, 107.740300], 11);
+    map = L.map('map').setView([-6.2088, 106.8456], 8); // Indonesia center
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
     // Add school marker
-    L.marker([-6.942100, 107.740300])
-        .addTo(map)
-        .bindPopup('<b>SMK Bakti Nusantara 666</b><br>Lokasi Sekolah')
-        .openPopup();
+    L.marker([-6.942100, 107.740300], {
+        icon: L.icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        })
+    })
+    .addTo(map)
+    .bindPopup('<b>SMK Bakti Nusantara 666</b><br>Lokasi Sekolah')
+    .openPopup();
 
     // Add legend
     addLegend();
     
     // Load initial data
     loadSebaranData();
+    
+    // Start real-time updates
+    startRealTimeUpdates();
 }
 
 function addLegend() {
@@ -202,6 +303,12 @@ function addLegend() {
             <i style="background: #45b7d1"></i> Akuntansi<br>
             <i style="background: #f9ca24"></i> Animasi<br>
             <i style="background: #6c5ce7"></i> BDP<br>
+            <hr>
+            <h6>Status</h6>
+            <i style="background: #6c757d"></i> Draft<br>
+            <i style="background: #ffc107"></i> Menunggu<br>
+            <i style="background: #28a745"></i> Terverifikasi<br>
+            <i style="background: #17a2b8"></i> Terbayar<br>
         `;
         return div;
     };
@@ -243,56 +350,30 @@ function getStatusText(status) {
 }
 
 function loadSebaranData() {
-    const filterJurusan = document.getElementById('filterJurusan').value;
-    const filterStatus = document.getElementById('filterStatus').value;
-    
-    let url = '/admin/api/sebaran-data';
-    const params = new URLSearchParams();
-    if (filterJurusan) params.append('jurusan', filterJurusan);
-    if (filterStatus) params.append('status', filterStatus);
-    if (params.toString()) url += '?' + params.toString();
-    
-    fetch(url)
+    fetch('/admin/api/sebaran-data')
         .then(response => response.json())
         .then(data => {
             sebaranData = data;
-            
-            // Add sample data if no real data
-            if (sebaranData.length === 0) {
-                sebaranData = [
-                    {
-                        id: 1,
-                        nama: 'Sample Pendaftar',
-                        alamat: 'Jl. Sample No. 1',
-                        latitude: -6.942100,
-                        longitude: 107.740300,
-                        jurusan: 'PPLG',
-                        jurusan_kode: 'PPLG',
-                        status: 'DRAFT',
-                        kecamatan: 'Cileunyi',
-                        kelurahan: 'Cimekar',
-                        tanggal_daftar: '13 Nov 2024'
-                    }
-                ];
-            }
-            
             updateMapMarkers();
             updateStatistics();
             updateTable();
+            updateLastUpdateTime();
         })
         .catch(error => {
             console.error('Error loading sebaran data:', error);
-            // Show error message
             document.getElementById('totalPendaftar').textContent = 'Error';
         });
 }
 
 function updateMapMarkers() {
-    // Clear existing markers
+    // Clear existing markers (except school marker)
     markers.forEach(marker => map.removeLayer(marker));
     markers = [];
     
-    sebaranData.forEach(pendaftar => {
+    // Apply filters
+    const filteredData = applyCurrentFilters();
+    
+    filteredData.forEach(pendaftar => {
         const statusColor = getStatusColor(pendaftar.status);
         const jurusanColor = getJurusanColor(pendaftar.jurusan_kode);
         
@@ -308,18 +389,25 @@ function updateMapMarkers() {
         const popupContent = `
             <div class="marker-popup">
                 <h6 class="mb-2"><i class="fas fa-user"></i> ${pendaftar.nama}</h6>
+                <p class="mb-1"><strong>ID Pendaftaran:</strong> ${pendaftar.id}</p>
+                <p class="mb-1"><strong>Email:</strong> ${pendaftar.email}</p>
                 <p class="mb-1"><strong>Jurusan:</strong> <span class="badge" style="background-color: ${jurusanColor}">${pendaftar.jurusan}</span></p>
                 <p class="mb-1"><strong>Status:</strong> <span class="badge" style="background-color: ${statusColor}">${getStatusText(pendaftar.status)}</span></p>
-                <p class="mb-1"><strong>Alamat:</strong> ${pendaftar.alamat}</p>
-                <p class="mb-1"><strong>Wilayah:</strong> ${pendaftar.kelurahan}, ${pendaftar.kecamatan}</p>
-                <p class="mb-0"><strong>Tgl Daftar:</strong> ${pendaftar.tanggal_daftar}</p>
                 <hr class="my-2">
+                <p class="mb-1"><strong>Alamat:</strong> ${pendaftar.alamat} ${pendaftar.rt_rw ? ', RT/RW ' + pendaftar.rt_rw : ''}</p>
+                <p class="mb-1"><strong>Kelurahan:</strong> ${pendaftar.kelurahan}</p>
+                <p class="mb-1"><strong>Kecamatan:</strong> ${pendaftar.kecamatan}</p>
+                <p class="mb-1"><strong>Kabupaten:</strong> ${pendaftar.kabupaten}</p>
+                <p class="mb-1"><strong>Provinsi:</strong> ${pendaftar.provinsi}</p>
+                <p class="mb-1"><strong>Kode Pos:</strong> ${pendaftar.kodepos}</p>
+                <hr class="my-2">
+                <p class="mb-0"><strong>Tanggal Daftar:</strong> ${pendaftar.tanggal_daftar}</p>
                 <small class="text-muted">Koordinat: ${pendaftar.latitude.toFixed(6)}, ${pendaftar.longitude.toFixed(6)}</small>
             </div>
         `;
         
         marker.bindPopup(popupContent, {
-            maxWidth: 300,
+            maxWidth: 350,
             className: 'custom-popup'
         });
         
@@ -328,98 +416,142 @@ function updateMapMarkers() {
     });
 }
 
-function updateStatistics() {
-    const totalPendaftar = sebaranData.length;
-    const uniqueKecamatan = new Set(sebaranData.map(p => p.kecamatan)).size;
-    const uniqueKelurahan = new Set(sebaranData.map(p => p.kelurahan)).size;
+function applyCurrentFilters() {
+    const filterJurusan = document.getElementById('filterJurusan').value;
+    const filterStatus = document.getElementById('filterStatus').value;
     
-    // Calculate farthest distance from school
-    const schoolLat = -6.942100;
-    const schoolLng = 107.740300;
-    let maxDistance = 0;
-    
-    sebaranData.forEach(p => {
-        const distance = calculateDistance(schoolLat, schoolLng, p.latitude, p.longitude);
-        if (distance > maxDistance) maxDistance = distance;
-    });
-    
-    document.getElementById('totalPendaftar').textContent = totalPendaftar;
-    document.getElementById('totalKecamatan').textContent = uniqueKecamatan;
-    document.getElementById('totalKelurahan').textContent = uniqueKelurahan;
-    document.getElementById('radiusTerjauh').textContent = maxDistance.toFixed(1);
-}
-
-function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371; // Radius of the Earth in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-}
-
-function updateTable() {
-    const tbody = document.getElementById('sebaranTableBody');
-    tbody.innerHTML = '';
-    
-    // Group by kecamatan/kelurahan
-    const grouped = {};
-    sebaranData.forEach(p => {
-        const key = `${p.kecamatan}-${p.kelurahan}`;
-        if (!grouped[key]) {
-            grouped[key] = {
-                kecamatan: p.kecamatan,
-                kelurahan: p.kelurahan,
-                pendaftar: [],
-                jurusanCount: {'PPLG': 0, 'DKV': 0, 'AKUNTANSI': 0, 'ANIMASI': 0, 'BDP': 0}
-            };
-        }
-        grouped[key].pendaftar.push(p);
-        if (grouped[key].jurusanCount.hasOwnProperty(p.jurusan_kode)) {
-            grouped[key].jurusanCount[p.jurusan_kode]++;
-        }
-    });
-    
-    Object.values(grouped).forEach(wilayah => {
-        const schoolLat = -6.942100;
-        const schoolLng = 107.740300;
-        const avgDistance = wilayah.pendaftar.reduce((sum, p) => {
-            return sum + calculateDistance(schoolLat, schoolLng, p.latitude, p.longitude);
-        }, 0) / wilayah.pendaftar.length;
-        
-        const row = `
-            <tr>
-                <td>${wilayah.kecamatan}</td>
-                <td>${wilayah.kelurahan}</td>
-                <td><span class="badge bg-primary">${wilayah.pendaftar.length}</span></td>
-                <td>${wilayah.jurusanCount.PPLG}</td>
-                <td>${wilayah.jurusanCount.DKV}</td>
-                <td>${wilayah.jurusanCount.AKUNTANSI}</td>
-                <td>${wilayah.jurusanCount.ANIMASI}</td>
-                <td>${wilayah.jurusanCount.BDP}</td>
-                <td>${avgDistance.toFixed(1)} km</td>
-            </tr>
-        `;
-        tbody.innerHTML += row;
+    return sebaranData.filter(pendaftar => {
+        const jurusanMatch = !filterJurusan || pendaftar.jurusan_kode === filterJurusan;
+        const statusMatch = !filterStatus || pendaftar.status === filterStatus;
+        return jurusanMatch && statusMatch;
     });
 }
 
-function updateMap() {
+function applyFilters() {
     updateMapMarkers();
     updateStatistics();
     updateTable();
 }
 
-function exportData() {
-    // Implement export functionality
-    alert('Export data functionality will be implemented');
+function updateStatistics() {
+    const filteredData = applyCurrentFilters();
+    const totalPendaftar = filteredData.length;
+    const uniqueKecamatan = new Set(filteredData.map(p => p.kecamatan)).size;
+    const uniqueKelurahan = new Set(filteredData.map(p => p.kelurahan)).size;
+    
+    document.getElementById('totalPendaftar').textContent = totalPendaftar;
+    document.getElementById('totalKecamatan').textContent = uniqueKecamatan;
+    document.getElementById('totalKelurahan').textContent = uniqueKelurahan;
 }
+
+function updateTable() {
+    const tbody = document.getElementById('sebaranTableBody');
+    const filteredData = applyCurrentFilters();
+    
+    if (filteredData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="10" class="text-center text-muted py-4">
+                    <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                    <p>Tidak ada data pendaftar sesuai filter</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    tbody.innerHTML = filteredData.map(pendaftar => `
+        <tr>
+            <td><span class="badge bg-primary">${pendaftar.id}</span></td>
+            <td>${pendaftar.nama}</td>
+            <td>${pendaftar.email}</td>
+            <td><span class="badge" style="background-color: ${getJurusanColor(pendaftar.jurusan_kode)}">${pendaftar.jurusan}</span></td>
+            <td><span class="badge" style="background-color: ${getStatusColor(pendaftar.status)}">${getStatusText(pendaftar.status)}</span></td>
+            <td>${pendaftar.provinsi}</td>
+            <td>${pendaftar.kabupaten}</td>
+            <td>${pendaftar.kecamatan}</td>
+            <td>${pendaftar.kelurahan}</td>
+            <td>${pendaftar.tanggal_daftar}</td>
+        </tr>
+    `).join('');
+}
+
+function updateLastUpdateTime() {
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent = now.toLocaleTimeString('id-ID');
+}
+
+function refreshMap() {
+    loadSebaranData();
+    
+    // Visual feedback
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Refreshing...';
+    btn.disabled = true;
+    
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }, 1000);
+}
+
+function startRealTimeUpdates() {
+    // Check for updates every 10 seconds
+    refreshInterval = setInterval(() => {
+        if (document.getElementById('autoRefresh').checked) {
+            checkForUpdates();
+        }
+    }, 10000);
+}
+
+function checkForUpdates() {
+    fetch('/admin/api/map-update')
+        .then(response => response.json())
+        .then(data => {
+            if (data.last_update > lastUpdateTimestamp) {
+                lastUpdateTimestamp = data.last_update;
+                loadSebaranData();
+                
+                // Show notification
+                showUpdateNotification();
+            }
+        })
+        .catch(error => {
+            console.error('Error checking for updates:', error);
+        });
+}
+
+function showUpdateNotification() {
+    const indicator = document.getElementById('realtimeStatus');
+    indicator.classList.add('active');
+    indicator.innerHTML = '<i class="fas fa-sync fa-spin"></i> Updated!';
+    
+    setTimeout(() => {
+        indicator.classList.remove('active');
+        indicator.innerHTML = '<i class="fas fa-circle pulse"></i> Live';
+    }, 2000);
+}
+
+// Auto refresh toggle
+document.getElementById('autoRefresh').addEventListener('change', function() {
+    if (this.checked) {
+        startRealTimeUpdates();
+    } else {
+        clearInterval(refreshInterval);
+    }
+});
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     initMap();
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
 });
 </script>
 @endsection

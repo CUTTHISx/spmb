@@ -1,5 +1,5 @@
 <!-- Top Navigation -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
     <div class="container-fluid">
         <!-- Brand -->
         <a class="navbar-brand fw-bold d-flex align-items-center" href="/dashboard">
@@ -40,6 +40,16 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link nav-link-custom {{ request()->is('admin/laporan') ? 'active' : '' }}" href="/admin/laporan">
+                                <i class="fas fa-file-alt me-2"></i>Laporan
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom {{ request()->is('admin/keputusan') ? 'active' : '' }}" href="/admin/keputusan">
+                                <i class="fas fa-gavel me-2"></i>Keputusan
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link nav-link-custom {{ request()->is('admin/akun') ? 'active' : '' }}" href="/admin/akun">
                                 <i class="fas fa-users-cog me-2"></i>Akun
                             </a>
@@ -59,6 +69,11 @@
                         <li class="nav-item">
                             <a class="nav-link nav-link-custom {{ request()->is('keuangan/verifikasi') ? 'active' : '' }}" href="/keuangan/verifikasi">
                                 <i class="fas fa-money-check-alt me-2"></i>Verifikasi Bayar
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom {{ request()->is('keuangan/rekap') ? 'active' : '' }}" href="/keuangan/rekap">
+                                <i class="fas fa-chart-line me-2"></i>Laporan
                             </a>
                         </li>
                     @elseif(Auth::user()->role == 'verifikator' || Auth::user()->role == 'verifikator_adm')
@@ -90,36 +105,43 @@
             <!-- Right Side Menu -->
             <ul class="navbar-nav">
                 <!-- Notifications -->
+                @php
+                    $notifications = Auth::check() ? \App\Models\Notification::forUser(Auth::id())->latest()->limit(5)->get() : collect();
+                    $unreadCount = Auth::check() ? \App\Models\Notification::forUser(Auth::id())->unread()->count() : 0;
+                @endphp
                 <li class="nav-item dropdown me-3">
                     <a class="nav-link notification-bell" href="#" role="button" data-bs-toggle="dropdown">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-badge">3</span>
+                        @if($unreadCount > 0)
+                            <span class="notification-badge">{{ $unreadCount > 9 ? '9+' : $unreadCount }}</span>
+                        @endif
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end notification-dropdown">
                         <li class="dropdown-header">
                             <i class="fas fa-bell me-2"></i>Notifikasi
                         </li>
                         <li><hr class="dropdown-divider"></li>
+                        @forelse($notifications as $notif)
                         <li>
-                            <a class="dropdown-item notification-item" href="#">
+                            <a class="dropdown-item notification-item {{ $notif->read_at ? '' : 'unread' }}" href="#" onclick="markAsRead({{ $notif->id }})">
                                 <div class="notification-content">
-                                    <div class="notification-title">Pendaftar Baru</div>
-                                    <div class="notification-text">Ahmad Syafiq telah mendaftar</div>
-                                    <div class="notification-time">5 menit lalu</div>
+                                    <div class="notification-title">{{ $notif->title }}</div>
+                                    <div class="notification-text">{{ $notif->message }}</div>
+                                    <div class="notification-time">{{ $notif->created_at->diffForHumans() }}</div>
                                 </div>
                             </a>
                         </li>
+                        @empty
                         <li>
-                            <a class="dropdown-item notification-item" href="#">
-                                <div class="notification-content">
-                                    <div class="notification-title">Verifikasi Selesai</div>
-                                    <div class="notification-text">Berkas Siti Fatimah diverifikasi</div>
-                                    <div class="notification-time">10 menit lalu</div>
-                                </div>
-                            </a>
+                            <div class="dropdown-item text-center text-muted">
+                                Tidak ada notifikasi
+                            </div>
                         </li>
+                        @endforelse
+                        @if($notifications->count() > 0)
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-center" href="#">Lihat Semua</a></li>
+                        <li><a class="dropdown-item text-center" href="#" onclick="markAllAsRead()">Tandai Semua Dibaca</a></li>
+                        @endif
                     </ul>
                 </li>
 
@@ -185,6 +207,11 @@
 .navbar {
     padding: 0.75rem 0;
     border-bottom: 1px solid #e9ecef;
+    z-index: 1030;
+}
+
+body {
+    padding-top: 80px;
 }
 
 .brand-icon {
@@ -382,4 +409,28 @@
         display: block !important;
     }
 }
+.notification-item.unread {
+    background-color: #f8f9fa;
+    border-left: 3px solid #0d6efd;
+}
 </style>
+
+<script src="{{ asset('js/notifications.js') }}"></script>
+<script>
+// Auto refresh notifications every 30 seconds
+setInterval(function() {
+    if (document.querySelector('.notification-badge')) {
+        fetch('/notifications/count')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.querySelector('.notification-badge');
+                if (data.count > 0) {
+                    badge.textContent = data.count > 9 ? '9+' : data.count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
+    }
+}, 30000);
+</script>

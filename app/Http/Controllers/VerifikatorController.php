@@ -10,11 +10,7 @@ class VerifikatorController extends Controller
 {
     public function dashboard()
     {
-        $pendingVerification = Pendaftar::where('status', '!=', 'DRAFT')
-            ->where(function($q) {
-                $q->where('status_berkas', 'PENDING')
-                  ->orWhere('status_data', 'PENDING');
-            })
+        $pendingVerification = Pendaftar::where('status', 'SUBMITTED')
             ->count();
         
         $verifiedAll = Pendaftar::where('status_berkas', 'VERIFIED')
@@ -24,14 +20,16 @@ class VerifikatorController extends Controller
         $rejected = Pendaftar::where('status_berkas', 'REJECTED')
             ->orWhere('status_data', 'REJECTED')
             ->count();
+            
+        $totalPendaftar = Pendaftar::whereIn('status', ['SUBMITTED', 'ADM_PASS', 'ADM_REJECT'])->count();
         
-        return view('dashboard.verifikator', compact('pendingVerification', 'verifiedAll', 'rejected'));
+        return view('dashboard.verifikator', compact('pendingVerification', 'verifiedAll', 'rejected', 'totalPendaftar'));
     }
     
     public function verifikasi()
     {
         $pendaftar = Pendaftar::with(['user', 'jurusan', 'dataSiswa', 'dataOrtu', 'asalSekolah', 'berkas'])
-            ->where('status', '!=', 'DRAFT')
+            ->where('status', 'SUBMITTED')
             ->orderBy('created_at', 'desc')
             ->get();
             
@@ -46,64 +44,47 @@ class VerifikatorController extends Controller
         return view('verifikator.detail', compact('pendaftar'));
     }
     
-    public function updateBerkasStatus(Request $request, $id)
+    public function updateVerifikasi(Request $request, $id)
     {
-        $request->validate([
-            'status' => 'required|in:VERIFIED,REJECTED,REVISION',
-            'catatan' => 'required|string|min:5'
-        ]);
-        
-        $pendaftar = Pendaftar::findOrFail($id);
-        $pendaftar->update([
-            'status_berkas' => $request->status,
-            'user_verifikasi_berkas' => Auth::id(),
-            'tgl_verifikasi_berkas' => now(),
-            'catatan_verifikasi' => $request->catatan
-        ]);
-        
-        // Log verification activity
-        \App\Models\LogAktivitas::create([
-            'user_id' => Auth::id(),
-            'aktivitas' => 'Verifikasi Berkas',
-            'deskripsi' => "Verifikasi berkas pendaftar {$pendaftar->user->name} - Status: {$request->status}",
-            'ip_address' => request()->ip()
-        ]);
-        
-        return response()->json(['success' => true, 'message' => 'Verifikasi berkas berhasil disimpan']);
-    }
-    
-    public function updateDataStatus(Request $request, $id)
-    {
-        $request->validate([
-            'status' => 'required|in:VERIFIED,REJECTED,REVISION',
-            'catatan' => 'required|string|min:5'
-        ]);
-        
-        $pendaftar = Pendaftar::findOrFail($id);
-        $pendaftar->update([
-            'status_data' => $request->status,
-            'user_verifikasi_data' => Auth::id(),
-            'tgl_verifikasi_data' => now(),
-            'catatan_verifikasi' => $request->catatan
-        ]);
-        
-        // Auto update main status if both berkas and data are verified
-        if ($pendaftar->status_berkas == 'VERIFIED' && $pendaftar->status_data == 'VERIFIED') {
-            $pendaftar->update(['status' => 'VERIFIED_ADM']);
-        } elseif ($pendaftar->status_berkas == 'REJECTED' || $pendaftar->status_data == 'REJECTED') {
-            $pendaftar->update(['status' => 'REJECTED']);
-        } elseif ($pendaftar->status_berkas == 'REVISION' || $pendaftar->status_data == 'REVISION') {
-            $pendaftar->update(['status' => 'REVISION']);
+        try {
+            $request->validate([
+                'status' => 'required|in:VERIFIED,REJECTED,REVISION',
+                'catatan' => 'required|string|min:5'
+            ]);
+            
+            $pendaftar = Pendaftar::findOrFail($id);
+            $pendaftar->update([
+                'status_berkas' => $request->status,
+                'status_data' => $request->status,
+                'user_verifikasi_berkas' => Auth::id(),
+                'user_verifikasi_data' => Auth::id(),
+                'tgl_verifikasi_berkas' => now(),
+                'tgl_verifikasi_data' => now(),
+                'catatan_verifikasi' => $request->catatan
+            ]);
+            
+            // Update main status
+            if ($request->status == 'VERIFIED') {
+                $pendaftar->update(['status' => 'VERIFIED']);
+            } elseif ($request->status == 'REJECTED') {
+                $pendaftar->update(['status' => 'REJECTED']);
+            }
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'Verifikasi berhasil disimpan',
+                'status' => $request->status
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Data tidak valid: ' . implode(', ', $e->validator->errors()->all())
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-        
-        // Log verification activity
-        \App\Models\LogAktivitas::create([
-            'user_id' => Auth::id(),
-            'aktivitas' => 'Verifikasi Data',
-            'deskripsi' => "Verifikasi data pendaftar {$pendaftar->user->name} - Status: {$request->status}",
-            'ip_address' => request()->ip()
-        ]);
-        
-        return response()->json(['success' => true, 'message' => 'Verifikasi data berhasil disimpan']);
     }
 }

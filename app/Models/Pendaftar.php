@@ -9,6 +9,7 @@ class Pendaftar extends Model
     protected $table = 'pendaftar';
     protected $fillable = [
         'user_id', 'gelombang_id', 'jurusan_id', 'no_pendaftaran', 'status', 
+        'hasil_keputusan', 'user_keputusan', 'tgl_keputusan', 'catatan_keputusan',
         'user_verifikasi_adm', 'tgl_verifikasi_adm', 'catatan_verifikasi',
         'user_verifikasi_payment', 'tgl_verifikasi_payment', 'status_payment',
         'user_verifikasi_berkas', 'tgl_verifikasi_berkas', 'status_berkas',

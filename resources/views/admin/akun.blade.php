@@ -2,13 +2,91 @@
 
 @section('title', 'Manajemen Akun - PPDB Online')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/layouts/dashboard.css') }}">
+@endsection
+
 @section('content')
 <div class="container mt-4">
+    <!-- Stats Overview -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-2">
+            <div class="card stat-card">
+                <div class="card-body text-center py-3">
+                    <div class="stat-icon bg-primary-light mb-2">
+                        <i class="fas fa-users text-primary fa-2x"></i>
+                    </div>
+                    <h5 class="fw-bold">{{ $totalUsers ?? 45 }}</h5>
+                    <small class="text-muted">Total Akun</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card">
+                <div class="card-body text-center py-3">
+                    <div class="stat-icon bg-danger-light mb-2">
+                        <i class="fas fa-user-shield text-danger fa-2x"></i>
+                    </div>
+                    <h5 class="fw-bold">{{ $adminCount ?? 3 }}</h5>
+                    <small class="text-muted">Admin</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card">
+                <div class="card-body text-center py-3">
+                    <div class="stat-icon bg-warning-light mb-2">
+                        <i class="fas fa-user-tie text-warning fa-2x"></i>
+                    </div>
+                    <h5 class="fw-bold">{{ $kepsekCount ?? 1 }}</h5>
+                    <small class="text-muted">Kepsek</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card">
+                <div class="card-body text-center py-3">
+                    <div class="stat-icon bg-success-light mb-2">
+                        <i class="fas fa-calculator text-success fa-2x"></i>
+                    </div>
+                    <h5 class="fw-bold">{{ $keuanganCount ?? 2 }}</h5>
+                    <small class="text-muted">Keuangan</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card">
+                <div class="card-body text-center py-3">
+                    <div class="stat-icon bg-info-light mb-2">
+                        <i class="fas fa-check-circle text-info fa-2x"></i>
+                    </div>
+                    <h5 class="fw-bold">{{ $verifikatorCount ?? 4 }}</h5>
+                    <small class="text-muted">Verifikator</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card stat-card">
+                <div class="card-body text-center py-3">
+                    <div class="stat-icon bg-secondary-light mb-2">
+                        <i class="fas fa-user-graduate text-secondary fa-2x"></i>
+                    </div>
+                    <h5 class="fw-bold">{{ $pendaftarCount ?? 35 }}</h5>
+                    <small class="text-muted">Pendaftar</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
     <div class="card system-status-card">
         <div class="card-header bg-white border-0 py-3">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h4 class="mb-1">Manajemen Akun Pengguna</h4>
+                    <h5 class="card-title mb-1 fw-bold">
+                        <i class="fas fa-users-cog text-primary me-2"></i>
+                        Manajemen Akun Pengguna
+                    </h5>
                     <p class="text-muted mb-0">Kelola akun pengguna sistem PPDB</p>
                 </div>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tambahAkunModal">
@@ -20,8 +98,8 @@
         <div class="card-body">
             <!-- Filter Section -->
             <div class="row mb-4">
-                <div class="col-md-3">
-                    <label class="form-label">Filter Role</label>
+                <div class="col-md-4">
+                    <label class="form-label fw-medium">Filter Role</label>
                     <select class="form-select" id="filterRole">
                         <option value="">Semua Role</option>
                         <option value="admin">Admin</option>
@@ -31,77 +109,14 @@
                         <option value="pendaftar">Pendaftar</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Status Akun</label>
-                    <select class="form-select" id="filterStatus">
-                        <option value="">Semua Status</option>
-                        <option value="aktif">Aktif</option>
-                        <option value="nonaktif">Non-Aktif</option>
-                    </select>
-                </div>
+
                 <div class="col-md-6">
-                    <label class="form-label">Cari Pengguna</label>
+                    <label class="form-label fw-medium">Cari Pengguna</label>
                     <input type="text" class="form-control" id="searchUser" placeholder="Nama/Email">
                 </div>
             </div>
 
-            <!-- Statistics Cards -->
-            <div class="row mb-4">
-                <div class="col-md-2">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body text-center py-3">
-                            <i class="fas fa-users fa-2x mb-2"></i>
-                            <h5>{{ $totalUsers ?? 45 }}</h5>
-                            <small>Total Akun</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card bg-danger text-white">
-                        <div class="card-body text-center py-3">
-                            <i class="fas fa-user-shield fa-2x mb-2"></i>
-                            <h5>{{ $adminCount ?? 3 }}</h5>
-                            <small>Admin</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card bg-warning text-white">
-                        <div class="card-body text-center py-3">
-                            <i class="fas fa-user-tie fa-2x mb-2"></i>
-                            <h5>{{ $kepsekCount ?? 1 }}</h5>
-                            <small>Kepsek</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card bg-success text-white">
-                        <div class="card-body text-center py-3">
-                            <i class="fas fa-calculator fa-2x mb-2"></i>
-                            <h5>{{ $keuanganCount ?? 2 }}</h5>
-                            <small>Keuangan</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card bg-info text-white">
-                        <div class="card-body text-center py-3">
-                            <i class="fas fa-check-circle fa-2x mb-2"></i>
-                            <h5>{{ $verifikatorCount ?? 4 }}</h5>
-                            <small>Verifikator</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card bg-secondary text-white">
-                        <div class="card-body text-center py-3">
-                            <i class="fas fa-user-graduate fa-2x mb-2"></i>
-                            <h5>{{ $pendaftarCount ?? 35 }}</h5>
-                            <small>Pendaftar</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             <!-- Data Table -->
             <div class="table-responsive">
@@ -112,7 +127,6 @@
                             <th>Nama</th>
                             <th>Email</th>
                             <th>Role</th>
-                            <th>Status</th>
                             <th>Login Terakhir</th>
                             <th>Tgl Dibuat</th>
                             <th>Aksi</th>
@@ -122,7 +136,7 @@
                         @forelse($users ?? [] as $index => $user)
                         <tr>
                             <td><span class="badge bg-secondary">{{ $user->id ?? $index+1 }}</span></td>
-                            <td class="fw-medium">{{ $user->name ?? 'User '.($index+1) }}</td>
+                            <td class="fw-medium">{{ $user->nama ?? 'User '.($index+1) }}</td>
                             <td>{{ $user->email ?? 'user'.($index+1).'@ppdb.com' }}</td>
                             <td>
                                 @php
@@ -134,22 +148,16 @@
                                 @endphp
                                 <span class="badge bg-{{ $color }}">{{ ucfirst($role) }}</span>
                             </td>
-                            <td>
-                                @if(rand(0,1))
-                                    <span class="badge bg-success">Aktif</span>
-                                @else
-                                    <span class="badge bg-danger">Non-Aktif</span>
-                                @endif
-                            </td>
+
                             <td>{{ date('d/m/Y H:i', strtotime('-'.rand(1,72).' hours')) }}</td>
                             <td>{{ date('d/m/Y', strtotime('-'.rand(1,365).' days')) }}</td>
                             <td>
                                 <div class="btn-group" role="group">
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewDetail({{ $user->id ?? $index+1 }})" title="Detail">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
                                     <button class="btn btn-outline-primary btn-sm" onclick="editUser({{ $user->id ?? $index+1 }})" title="Edit">
                                         <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-outline-warning btn-sm" onclick="resetPassword({{ $user->id ?? $index+1 }})" title="Reset Password">
-                                        <i class="fas fa-key"></i>
                                     </button>
                                     <button class="btn btn-outline-danger btn-sm" onclick="deleteUser({{ $user->id ?? $index+1 }})" title="Hapus">
                                         <i class="fas fa-trash"></i>
@@ -172,22 +180,16 @@
                                 @endphp
                                 <span class="badge bg-{{ $color }}">{{ ucfirst($role) }}</span>
                             </td>
-                            <td>
-                                @if($i <= 15)
-                                    <span class="badge bg-success">Aktif</span>
-                                @else
-                                    <span class="badge bg-danger">Non-Aktif</span>
-                                @endif
-                            </td>
+
                             <td>{{ date('d/m/Y H:i', strtotime('-'.rand(1,72).' hours')) }}</td>
                             <td>{{ date('d/m/Y', strtotime('-'.rand(1,365).' days')) }}</td>
                             <td>
                                 <div class="btn-group" role="group">
+                                    <button class="btn btn-outline-info btn-sm" onclick="viewDetail({{ $i }})" title="Detail">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
                                     <button class="btn btn-outline-primary btn-sm" onclick="editUser({{ $i }})" title="Edit">
                                         <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-outline-warning btn-sm" onclick="resetPassword({{ $i }})" title="Reset Password">
-                                        <i class="fas fa-key"></i>
                                     </button>
                                     <button class="btn btn-outline-danger btn-sm" onclick="deleteUser({{ $i }})" title="Hapus">
                                         <i class="fas fa-trash"></i>
@@ -319,33 +321,78 @@
     </div>
 </div>
 
+<!-- Detail Akun Modal -->
+<div class="modal fade" id="detailAkunModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Akun Pengguna</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3">Informasi Akun</h6>
+                        <table class="table table-sm">
+                            <tr><td class="fw-medium">ID</td><td id="detailId">-</td></tr>
+                            <tr><td class="fw-medium">Nama Lengkap</td><td id="detailNama">-</td></tr>
+                            <tr><td class="fw-medium">Email</td><td id="detailEmail">-</td></tr>
+                            <tr><td class="fw-medium">Role</td><td id="detailRole">-</td></tr>
+                            <tr><td class="fw-medium">Status</td><td id="detailStatus">-</td></tr>
+                            <tr><td class="fw-medium">Login Terakhir</td><td id="detailLoginTerakhir">-</td></tr>
+                            <tr><td class="fw-medium">Tanggal Dibuat</td><td id="detailTglDibuat">-</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-primary mb-3">Ganti Password</h6>
+                        <form id="changePasswordForm">
+                            <input type="hidden" id="passwordUserId">
+                            <div class="mb-3">
+                                <label class="form-label">Password Baru</label>
+                                <input type="password" class="form-control" id="newPassword" minlength="6">
+                                <div class="form-text">Minimal 6 karakter</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Konfirmasi Password</label>
+                                <input type="password" class="form-control" id="confirmPassword">
+                            </div>
+                            <button type="button" class="btn btn-warning" onclick="updatePassword()">
+                                <i class="fas fa-key me-2"></i>Ganti Password
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // CSRF Token
 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
 // Filter Functions
 document.getElementById('filterRole').addEventListener('change', filterTable);
-document.getElementById('filterStatus').addEventListener('change', filterTable);
 document.getElementById('searchUser').addEventListener('input', filterTable);
 
 function filterTable() {
     const roleFilter = document.getElementById('filterRole').value;
-    const statusFilter = document.getElementById('filterStatus').value;
     const searchTerm = document.getElementById('searchUser').value.toLowerCase();
     
     const rows = document.querySelectorAll('#akunTable tbody tr');
     
     rows.forEach(row => {
         const role = row.cells[3].textContent.toLowerCase();
-        const status = row.cells[4].textContent.toLowerCase();
         const name = row.cells[1].textContent.toLowerCase();
         const email = row.cells[2].textContent.toLowerCase();
         
         const roleMatch = !roleFilter || role.includes(roleFilter);
-        const statusMatch = !statusFilter || status.includes(statusFilter);
         const searchMatch = !searchTerm || name.includes(searchTerm) || email.includes(searchTerm);
         
-        row.style.display = (roleMatch && statusMatch && searchMatch) ? '' : 'none';
+        row.style.display = (roleMatch && searchMatch) ? '' : 'none';
     });
 }
 
@@ -379,11 +426,16 @@ function simpanAkun() {
 }
 
 function editUser(id) {
-    // Fetch user data (for now using dummy data)
+    // Get user data from table row
+    const row = document.querySelector(`button[onclick="editUser(${id})"]`).closest('tr');
+    const nama = row.cells[1].textContent.trim();
+    const email = row.cells[2].textContent.trim();
+    const role = row.cells[3].textContent.toLowerCase().trim();
+    
     document.getElementById('editUserId').value = id;
-    document.getElementById('editName').value = 'User ' + id;
-    document.getElementById('editEmail').value = 'user' + id + '@ppdb.com';
-    document.getElementById('editRole').value = 'pendaftar';
+    document.getElementById('editName').value = nama;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editRole').value = role === 'kepala sekolah' ? 'kepsek' : role;
     document.getElementById('editStatus').value = 'aktif';
     
     new bootstrap.Modal(document.getElementById('editAkunModal')).show();
@@ -423,28 +475,81 @@ function updateAkun() {
     });
 }
 
-function resetPassword(id) {
-    if(confirm('Reset password untuk user ini? Password akan direset ke "ppdb123"')) {
-        fetch(`/admin/akun/${id}/reset-password`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Accept': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Password berhasil direset. Password baru: ppdb123');
-            } else {
-                alert('Error: ' + (data.message || 'Gagal reset password'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan saat reset password');
-        });
+
+
+function viewDetail(id) {
+    // Get user data from table row
+    const row = document.querySelector(`button[onclick="viewDetail(${id})"]`).closest('tr');
+    const nama = row.cells[1].textContent.trim();
+    const email = row.cells[2].textContent.trim();
+    const role = row.cells[3].textContent.trim();
+    const loginTerakhir = row.cells[4].textContent.trim();
+    const tglDibuat = row.cells[5].textContent.trim();
+    
+    // Populate detail modal
+    document.getElementById('detailId').textContent = id;
+    document.getElementById('detailNama').textContent = nama;
+    document.getElementById('detailEmail').textContent = email;
+    document.getElementById('detailRole').innerHTML = role;
+    document.getElementById('detailStatus').innerHTML = '<span class="badge bg-success">Aktif</span>';
+    document.getElementById('detailLoginTerakhir').textContent = loginTerakhir;
+    document.getElementById('detailTglDibuat').textContent = tglDibuat;
+    
+    // Set up password change form
+    document.getElementById('passwordUserId').value = id;
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    
+    new bootstrap.Modal(document.getElementById('detailAkunModal')).show();
+}
+
+function updatePassword() {
+    const id = document.getElementById('passwordUserId').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (!newPassword || !confirmPassword) {
+        alert('Mohon isi password baru dan konfirmasi password');
+        return;
     }
+    
+    if (newPassword.length < 6) {
+        alert('Password minimal 6 karakter');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        alert('Konfirmasi password tidak cocok');
+        return;
+    }
+    
+    const formData = {
+        password: newPassword
+    };
+    
+    fetch(`/admin/akun/${id}/password`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Password berhasil diubah');
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        } else {
+            alert('Error: ' + (data.message || 'Gagal mengubah password'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Terjadi kesalahan saat mengubah password');
+    });
 }
 
 function deleteUser(id) {

@@ -42,7 +42,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h3 class="fw-bold text-success mb-1">Rp 12.5M</h3>
+                            <h3 class="fw-bold text-success mb-1">Rp {{ number_format($totalPemasukan ?? 0, 0, ',', '.') }}</h3>
                             <p class="text-muted mb-0 small">Total Pemasukan</p>
                         </div>
                         <div class="stat-icon bg-success-light">
@@ -64,7 +64,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h3 class="fw-bold text-warning mb-1">8</h3>
+                            <h3 class="fw-bold text-warning mb-1">{{ $pendingPayment ?? 0 }}</h3>
                             <p class="text-muted mb-0 small">Menunggu Verifikasi</p>
                         </div>
                         <div class="stat-icon bg-warning-light">
@@ -83,7 +83,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h3 class="fw-bold text-success mb-1">50</h3>
+                            <h3 class="fw-bold text-success mb-1">{{ $verifiedPayment ?? 0 }}</h3>
                             <p class="text-muted mb-0 small">Terverifikasi</p>
                         </div>
                         <div class="stat-icon bg-success-light">
@@ -91,7 +91,11 @@
                         </div>
                     </div>
                     <div class="mt-3">
-                        <span class="badge bg-success">86% dari total</span>
+                        @php
+                            $totalPayments = $pendingPayment + $verifiedPayment + $rejectedPayment;
+                            $verifiedPercentage = $totalPayments > 0 ? round(($verifiedPayment / $totalPayments) * 100) : 0;
+                        @endphp
+                        <span class="badge bg-success">{{ $verifiedPercentage }}% dari total</span>
                     </div>
                 </div>
             </div>
@@ -102,7 +106,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h3 class="fw-bold text-danger mb-1">2</h3>
+                            <h3 class="fw-bold text-danger mb-1">{{ $rejectedPayment ?? 0 }}</h3>
                             <p class="text-muted mb-0 small">Ditolak</p>
                         </div>
                         <div class="stat-icon bg-danger-light">
@@ -110,7 +114,10 @@
                         </div>
                     </div>
                     <div class="mt-3">
-                        <span class="badge bg-danger">3% dari total</span>
+                        @php
+                            $rejectedPercentage = $totalPayments > 0 ? round(($rejectedPayment / $totalPayments) * 100) : 0;
+                        @endphp
+                        <span class="badge bg-danger">{{ $rejectedPercentage }}% dari total</span>
                     </div>
                 </div>
             </div>
@@ -176,56 +183,17 @@
         </div>
     </div>
 
-    <!-- Grafik Keuangan -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-chart-area text-success me-2"></i>
-                        Tren Pembayaran Mingguan
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="paymentChart" height="100"></canvas>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-pie-chart text-info me-2"></i>
-                        Status Pembayaran
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="statusChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Pembayaran Terbaru dengan Fitur Advanced -->
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0 fw-bold">
-                            <i class="fas fa-history text-primary me-2"></i>
-                            Pembayaran Terbaru
-                        </h5>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-filter me-1"></i>Filter
-                            </button>
-                            <button class="btn btn-outline-success btn-sm">
-                                <i class="fas fa-download me-1"></i>Export
-                            </button>
-                        </div>
-                    </div>
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-history text-primary me-2"></i>
+                        Pembayaran Terbaru
+                    </h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -236,11 +204,10 @@
                                     <th class="border-0 fw-bold">Nominal</th>
                                     <th class="border-0 fw-bold">Tanggal</th>
                                     <th class="border-0 fw-bold">Metode</th>
-                                    <th class="border-0 fw-bold">Status</th>
-                                    <th class="border-0 fw-bold text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                @forelse($recentPayments as $pendaftar)
                                 <tr>
                                     <td class="py-3">
                                         <div class="d-flex align-items-center">
@@ -248,102 +215,30 @@
                                                 <i class="fas fa-user text-primary"></i>
                                             </div>
                                             <div>
-                                                <div class="fw-bold">Ahmad Siswa</div>
-                                                <small class="text-muted">PPDB-2024-00001</small>
+                                                <div class="fw-bold">{{ $pendaftar->dataSiswa->nama ?? $pendaftar->user->name ?? 'N/A' }}</div>
+                                                <small class="text-muted">{{ $pendaftar->no_pendaftaran ?? 'PPDB'.date('Y').str_pad($pendaftar->id, 4, '0', STR_PAD_LEFT) }}</small>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="py-3">
-                                        <span class="fw-bold text-success">Rp 250.000</span>
+                                        <span class="fw-bold text-success">Rp {{ number_format($pendaftar->pembayaran->nominal ?? 0, 0, ',', '.') }}</span>
                                     </td>
                                     <td class="py-3">
-                                        <div>12 Nov 2024</div>
-                                        <small class="text-muted">14:30 WIB</small>
+                                        <div>{{ $pendaftar->created_at->format('d M Y') }}</div>
+                                        <small class="text-muted">{{ $pendaftar->created_at->format('H:i') }} WIB</small>
                                     </td>
                                     <td class="py-3">
                                         <span class="badge bg-info-light text-info">Transfer Bank</span>
                                     </td>
-                                    <td class="py-3">
-                                        <span class="badge bg-warning text-dark">Menunggu</span>
-                                    </td>
-                                    <td class="py-3 text-center">
-                                        <div class="btn-group" role="group">
-                                            <button class="btn btn-sm btn-outline-primary" title="Verifikasi">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-info" title="Lihat Bukti">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </td>
                                 </tr>
+                                @empty
                                 <tr>
-                                    <td class="py-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="bg-success-light rounded-circle p-2 me-3">
-                                                <i class="fas fa-user text-success"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold">Siti Nurhaliza</div>
-                                                <small class="text-muted">PPDB-2024-00002</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="fw-bold text-success">Rp 250.000</span>
-                                    </td>
-                                    <td class="py-3">
-                                        <div>11 Nov 2024</div>
-                                        <small class="text-muted">10:15 WIB</small>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="badge bg-success-light text-success">E-Wallet</span>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="badge bg-success">Terverifikasi</span>
-                                    </td>
-                                    <td class="py-3 text-center">
-                                        <button class="btn btn-sm btn-outline-secondary" disabled>
-                                            <i class="fas fa-check-circle"></i> Selesai
-                                        </button>
+                                    <td colspan="4" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Belum ada data pembayaran</p>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td class="py-3">
-                                        <div class="d-flex align-items-center">
-                                            <div class="bg-warning-light rounded-circle p-2 me-3">
-                                                <i class="fas fa-user text-warning"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold">Budi Santoso</div>
-                                                <small class="text-muted">PPDB-2024-00003</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="fw-bold text-success">Rp 250.000</span>
-                                    </td>
-                                    <td class="py-3">
-                                        <div>10 Nov 2024</div>
-                                        <small class="text-muted">16:45 WIB</small>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="badge bg-primary-light text-primary">Virtual Account</span>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="badge bg-warning text-dark">Menunggu</span>
-                                    </td>
-                                    <td class="py-3 text-center">
-                                        <div class="btn-group" role="group">
-                                            <button class="btn btn-sm btn-outline-primary" title="Verifikasi">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-outline-info" title="Lihat Bukti">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -358,68 +253,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{{ asset('js/layouts/dashboard.js') }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Payment Trend Chart
-    const paymentCtx = document.getElementById('paymentChart').getContext('2d');
-    new Chart(paymentCtx, {
-        type: 'line',
-        data: {
-            labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
-            datasets: [{
-                label: 'Pembayaran Masuk',
-                data: [12, 19, 15, 25, 22, 18, 8],
-                borderColor: '#28a745',
-                backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0,0,0,0.1)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
-    });
-
-    // Status Pie Chart
-    const statusCtx = document.getElementById('statusChart').getContext('2d');
-    new Chart(statusCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Terverifikasi', 'Menunggu', 'Ditolak'],
-            datasets: [{
-                data: [50, 8, 2],
-                backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-});
+// Chart.js removed - no charts needed
 </script>
 @endsection

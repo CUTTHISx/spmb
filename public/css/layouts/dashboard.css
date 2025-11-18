@@ -50,6 +50,10 @@
     background-color: rgba(13, 202, 240, 0.1);
 }
 
+.bg-secondary-light {
+    background-color: rgba(108, 117, 125, 0.1);
+}
+
 .bg-gradient-primary {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }

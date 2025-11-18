@@ -50,7 +50,7 @@
                         </div>
                     </div>
                     <div class="mt-3">
-                        <span class="badge bg-warning text-dark">Prioritas Tinggi</span>
+                        <span class="badge bg-warning text-dark">Perlu Segera</span>
                     </div>
                 </div>
             </div>
@@ -69,10 +69,13 @@
                         </div>
                     </div>
                     <div class="mt-3">
+                        @php
+                            $percentage = $totalPendaftar > 0 ? round(($verifiedAll / $totalPendaftar) * 100) : 0;
+                        @endphp
                         <div class="progress" style="height: 4px;">
-                            <div class="progress-bar bg-success" style="width: 93%"></div>
+                            <div class="progress-bar bg-success" style="width: {{ $percentage }}%"></div>
                         </div>
-                        <small class="text-success">93% dari target</small>
+                        <small class="text-success">{{ $percentage }}% dari total</small>
                     </div>
                 </div>
             </div>
@@ -102,15 +105,15 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h3 class="fw-bold text-info mb-1">95%</h3>
-                            <p class="text-muted mb-0 small">Tingkat Akurasi</p>
+                            <h3 class="fw-bold text-info mb-1">{{ $totalPendaftar }}</h3>
+                            <p class="text-muted mb-0 small">Total Pendaftar</p>
                         </div>
                         <div class="stat-icon bg-info-light">
                             <i class="fas fa-bullseye text-info fa-lg"></i>
                         </div>
                     </div>
                     <div class="mt-3">
-                        <span class="badge bg-info">Excellent</span>
+                        <span class="badge bg-info">Aktif</span>
                     </div>
                 </div>
             </div>
@@ -218,7 +221,7 @@
                                     <th class="border-0 fw-bold">Jurusan</th>
                                     <th class="border-0 fw-bold">Tanggal Daftar</th>
                                     <th class="border-0 fw-bold">Kelengkapan</th>
-                                    <th class="border-0 fw-bold">Prioritas</th>
+
                                     <th class="border-0 fw-bold text-center">Aksi</th>
                                 </tr>
                             </thead>
@@ -266,9 +269,7 @@
                                         </div>
                                         <small class="text-{{ $completeness >= 80 ? 'success' : ($completeness >= 50 ? 'warning' : 'danger') }}">{{ $completeness }}% lengkap</small>
                                     </td>
-                                    <td class="py-3">
-                                        <span class="badge bg-{{ $p->status_berkas == 'PENDING' && $p->status_data == 'PENDING' ? 'danger' : 'warning' }}">{{ $p->status_berkas == 'PENDING' && $p->status_data == 'PENDING' ? 'Tinggi' : 'Sedang' }}</span>
-                                    </td>
+
                                     <td class="py-3 text-center">
                                         <a href="/verifikator/verifikasi" class="btn btn-sm btn-primary">
                                             <i class="fas fa-eye me-1"></i>Verifikasi
@@ -277,7 +278,7 @@
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">
+                                    <td colspan="5" class="text-center py-4 text-muted">
                                         <i class="fas fa-inbox fa-2x mb-2"></i>
                                         <div>Tidak ada data yang perlu diverifikasi</div>
                                     </td>

@@ -2,132 +2,175 @@
 
 @section('title', 'Verifikasi Administrasi - PPDB Online')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/layouts/dashboard.css') }}">
+@endsection
+
 @section('content')
 <div class="container mt-4">
-    <div class="card">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Verifikasi Administrasi</h5>
-            <small>Cek data & berkas; tandai Lulus/Tolak/Perbaikan dengan catatan</small>
-        </div>
-        <div class="card-body">
-            @foreach($pendaftar as $p)
-            <div class="card mb-4 border-start border-4 border-{{ $p->status_berkas == 'VERIFIED' && $p->status_data == 'VERIFIED' ? 'success' : ($p->status_berkas == 'REJECTED' || $p->status_data == 'REJECTED' ? 'danger' : 'warning') }}">
-                <div class="card-header bg-light">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h6 class="mb-1"><strong>{{ $p->user->name }}</strong></h6>
-                            <small class="text-muted">{{ $p->no_pendaftaran ?? 'Belum Ada' }} | {{ $p->jurusan->nama ?? 'Belum Pilih' }} | {{ $p->created_at->format('d M Y H:i') }}</small>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            <span class="badge bg-{{ $p->status_berkas == 'VERIFIED' ? 'success' : ($p->status_berkas == 'REJECTED' ? 'danger' : 'warning') }} me-1">Berkas: {{ $p->status_berkas }}</span>
-                            <span class="badge bg-{{ $p->status_data == 'VERIFIED' ? 'success' : ($p->status_data == 'REJECTED' ? 'danger' : 'warning') }}">Data: {{ $p->status_data }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Data Pribadi -->
-                        <div class="col-md-4">
-                            <h6 class="text-primary"><i class="fas fa-user me-2"></i>Data Pribadi</h6>
-                            @if($p->dataSiswa)
-                            <div class="small">
-                                <div><strong>Nama:</strong> {{ $p->dataSiswa->nama_lengkap }}</div>
-                                <div><strong>NIK:</strong> {{ $p->dataSiswa->nik ?? '-' }}</div>
-                                <div><strong>Tempat/Tgl Lahir:</strong> {{ $p->dataSiswa->tempat_lahir ?? '-' }}, {{ $p->dataSiswa->tanggal_lahir ?? '-' }}</div>
-                                <div><strong>Alamat:</strong> {{ $p->dataSiswa->alamat ?? '-' }}</div>
-                                <div><strong>No. HP:</strong> {{ $p->dataSiswa->no_hp ?? '-' }}</div>
-                            </div>
-                            @else
-                            <div class="text-danger small">Data pribadi belum lengkap</div>
-                            @endif
-                        </div>
-                        
-                        <!-- Data Orang Tua -->
-                        <div class="col-md-4">
-                            <h6 class="text-success"><i class="fas fa-users me-2"></i>Data Orang Tua</h6>
-                            @if($p->dataOrtu)
-                            <div class="small">
-                                <div><strong>Ayah:</strong> {{ $p->dataOrtu->nama_ayah ?? '-' }}</div>
-                                <div><strong>Pekerjaan:</strong> {{ $p->dataOrtu->pekerjaan_ayah ?? '-' }}</div>
-                                <div><strong>Ibu:</strong> {{ $p->dataOrtu->nama_ibu ?? '-' }}</div>
-                                <div><strong>Pekerjaan:</strong> {{ $p->dataOrtu->pekerjaan_ibu ?? '-' }}</div>
-                                <div><strong>No. HP:</strong> {{ $p->dataOrtu->no_hp_ortu ?? '-' }}</div>
-                            </div>
-                            @else
-                            <div class="text-danger small">Data orang tua belum lengkap</div>
-                            @endif
-                        </div>
-                        
-                        <!-- Berkas -->
-                        <div class="col-md-4">
-                            <h6 class="text-warning"><i class="fas fa-file-alt me-2"></i>Berkas Upload</h6>
-                            @php
-                                $berkasTypes = ['IJAZAH', 'KTP', 'KK', 'FOTO'];
-                                $uploadedBerkas = $p->berkas && $p->berkas->count() > 0 ? $p->berkas->pluck('jenis')->toArray() : [];
-                            @endphp
-                            <div class="small">
-                                @foreach($berkasTypes as $type)
-                                    @if(in_array($type, $uploadedBerkas))
-                                        <div><i class="fas fa-check text-success"></i> {{ ucfirst(strtolower($type)) }}</div>
-                                    @else
-                                        <div><i class="fas fa-times text-danger"></i> {{ ucfirst(strtolower($type)) }}</div>
-                                    @endif
-                                @endforeach
-                                <div class="mt-2">
-                                    <small class="text-muted">Total: {{ count($uploadedBerkas) }}/4 berkas</small>
-                                    <a href="/verifikator/detail/{{ $p->id }}" class="btn btn-sm btn-outline-info ms-2">
-                                        <i class="fas fa-eye"></i> Detail
-                                    </a>
-                                </div>
+    <!-- Header dengan Animasi -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-info text-white border-0 shadow-lg">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div class="bg-white bg-opacity-20 rounded-circle p-3">
+                                <i class="fas fa-clipboard-check fa-2x"></i>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Verifikasi Actions -->
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <div class="border-top pt-3">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6>Verifikasi Berkas</h6>
-                                        <div class="btn-group w-100" role="group">
-                                            <button class="btn btn-success btn-sm" onclick="showVerificationModal({{ $p->id }}, 'berkas', 'VERIFIED')" {{ $p->status_berkas != 'PENDING' ? 'disabled' : '' }}>
-                                                <i class="fas fa-check"></i> Lulus
-                                            </button>
-                                            <button class="btn btn-warning btn-sm" onclick="showVerificationModal({{ $p->id }}, 'berkas', 'REVISION')" {{ $p->status_berkas != 'PENDING' ? 'disabled' : '' }}>
-                                                <i class="fas fa-edit"></i> Perbaikan
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="showVerificationModal({{ $p->id }}, 'berkas', 'REJECTED')" {{ $p->status_berkas != 'PENDING' ? 'disabled' : '' }}>
-                                                <i class="fas fa-times"></i> Tolak
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6>Verifikasi Data</h6>
-                                        <div class="btn-group w-100" role="group">
-                                            <button class="btn btn-success btn-sm" onclick="showVerificationModal({{ $p->id }}, 'data', 'VERIFIED')" {{ $p->status_data != 'PENDING' ? 'disabled' : '' }}>
-                                                <i class="fas fa-check"></i> Lulus
-                                            </button>
-                                            <button class="btn btn-warning btn-sm" onclick="showVerificationModal({{ $p->id }}, 'data', 'REVISION')" {{ $p->status_data != 'PENDING' ? 'disabled' : '' }}>
-                                                <i class="fas fa-edit"></i> Perbaikan
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="showVerificationModal({{ $p->id }}, 'data', 'REJECTED')" {{ $p->status_data != 'PENDING' ? 'disabled' : '' }}>
-                                                <i class="fas fa-times"></i> Tolak
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                @if($p->catatan_verifikasi)
-                                <div class="mt-2">
-                                    <small class="text-muted"><strong>Catatan:</strong> {{ $p->catatan_verifikasi }}</small>
-                                </div>
-                                @endif
+                        <div>
+                            <h2 class="fw-bold mb-1">Verifikasi Administrasi</h2>
+                            <p class="mb-0 opacity-90">Cek data & berkas; tandai Lulus/Tolak/Perbaikan dengan catatan</p>
+                        </div>
+                        <div class="ms-auto">
+                            <div class="text-end">
+                                <small class="opacity-75">{{ count($pendaftar) }} Pendaftar</small>
+                                <div class="fw-bold">{{ date('H:i') }} WIB</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            @endforeach
+        </div>
+    </div>
+
+    <!-- Filter & Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-filter me-1"></i>Semua
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-hourglass-half me-1"></i>Pending
+                            </button>
+                            <button class="btn btn-outline-success btn-sm">
+                                <i class="fas fa-check me-1"></i>Verified
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-times me-1"></i>Rejected
+                            </button>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-sync me-1"></i>Refresh
+                            </button>
+                            <a href="/dashboard/verifikator" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-arrow-left me-1"></i>Kembali
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabel Verifikasi -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-list text-primary me-2"></i>
+                        Daftar Pendaftar
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0 fw-bold">Pendaftar</th>
+                                    <th class="border-0 fw-bold">Jurusan</th>
+                                    <th class="border-0 fw-bold">Berkas</th>
+                                    <th class="border-0 fw-bold">Status Berkas</th>
+                                    <th class="border-0 fw-bold">Status Data</th>
+                                    <th class="border-0 fw-bold text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($pendaftar as $p)
+                                <tr data-id="{{ $p->id }}">
+                                    <td class="py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-{{ $p->status_berkas == 'VERIFIED' && $p->status_data == 'VERIFIED' ? 'success' : ($p->status_berkas == 'REJECTED' || $p->status_data == 'REJECTED' ? 'danger' : 'warning') }}-light rounded-circle p-2 me-3">
+                                                <i class="fas fa-user text-{{ $p->status_berkas == 'VERIFIED' && $p->status_data == 'VERIFIED' ? 'success' : ($p->status_berkas == 'REJECTED' || $p->status_data == 'REJECTED' ? 'danger' : 'warning') }}"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ $p->dataSiswa->nama ?? $p->user->name }}</div>
+                                                <small class="text-muted">{{ $p->no_pendaftaran ?? 'PPDB'.date('Y').str_pad($p->id, 4, '0', STR_PAD_LEFT) }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge bg-info-light text-info">{{ $p->jurusan->nama ?? 'Belum Pilih' }}</span>
+                                    </td>
+                                    <td class="py-3">
+                                        @php
+                                            $berkasTypes = ['IJAZAH', 'KTP', 'KK', 'FOTO'];
+                                            $uploadedBerkas = $p->berkas && $p->berkas->count() > 0 ? $p->berkas->pluck('jenis')->toArray() : [];
+                                            $berkasCount = count($uploadedBerkas);
+                                        @endphp
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 8px;">
+                                                <div class="progress-bar bg-{{ $berkasCount == 4 ? 'success' : ($berkasCount >= 2 ? 'warning' : 'danger') }}" style="width: {{ ($berkasCount/4)*100 }}%"></div>
+                                            </div>
+                                            <small class="text-muted">{{ $berkasCount }}/4</small>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 status-berkas-cell">
+                                        @switch($p->status_berkas)
+                                            @case('VERIFIED')
+                                                <span class="badge bg-success">Terverifikasi</span>
+                                                @break
+                                            @case('REJECTED')
+                                                <span class="badge bg-danger">Ditolak</span>
+                                                @break
+                                            @case('REVISION')
+                                                <span class="badge bg-warning text-dark">Perbaikan</span>
+                                                @break
+                                            @default
+                                                <span class="badge bg-secondary">Menunggu</span>
+                                        @endswitch
+                                    </td>
+                                    <td class="py-3 status-data-cell">
+                                        @switch($p->status_data)
+                                            @case('VERIFIED')
+                                                <span class="badge bg-success">Terverifikasi</span>
+                                                @break
+                                            @case('REJECTED')
+                                                <span class="badge bg-danger">Ditolak</span>
+                                                @break
+                                            @case('REVISION')
+                                                <span class="badge bg-warning text-dark">Perbaikan</span>
+                                                @break
+                                            @default
+                                                <span class="badge bg-secondary">Menunggu</span>
+                                        @endswitch
+                                    </td>
+                                    <td class="py-3 text-center action-cell">
+                                        <a href="/verifikator/detail/{{ $p->id }}" class="badge bg-info-light text-info" style="cursor: pointer;" title="Detail">
+                                            <i class="fas fa-eye me-1"></i>Detail
+                                        </a>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Belum ada data pendaftar</p>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

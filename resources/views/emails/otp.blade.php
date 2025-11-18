@@ -1,41 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Kode OTP - PPDB Online</title>
+    <title>OTP Login - PPDB Online</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .logo { color: #4361ee; font-size: 24px; font-weight: bold; }
-        .otp-code { background: #4361ee; color: white; padding: 15px 30px; font-size: 32px; font-weight: bold; text-align: center; border-radius: 8px; margin: 20px 0; letter-spacing: 5px; }
-        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+        }
+        .otp-code {
+            background: #fff;
+            border: 2px dashed #4361ee;
+            padding: 20px;
+            text-align: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: #4361ee;
+            margin: 20px 0;
+            border-radius: 10px;
+            letter-spacing: 5px;
+        }
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo">🎓 PPDB Online</div>
-            <h2>Kode Verifikasi OTP</h2>
+    <div class="header">
+        <h1>🎓 SMK Bakti Nusantara 666</h1>
+        <p>Kode Verifikasi Login</p>
+    </div>
+    
+    <div class="content">
+        <h2>Halo {{ $user_name }}!</h2>
+        
+        <p>Kami menerima permintaan login ke akun PPDB Online Anda. Gunakan kode OTP berikut untuk melanjutkan:</p>
+        
+        <div class="otp-code">
+            {{ $otp }}
         </div>
         
-        <p>Halo,</p>
-        
-        <p>Gunakan kode OTP berikut untuk melanjutkan proses login Anda:</p>
-        
-        <div class="otp-code">{{ $otp }}</div>
-        
-        <p><strong>Penting:</strong></p>
-        <ul>
-            <li>Kode OTP ini berlaku selama <strong>5 menit</strong></li>
-            <li>Jangan bagikan kode ini kepada siapa pun</li>
-            <li>Jika Anda tidak meminta kode ini, abaikan email ini</li>
-        </ul>
-        
-        <div class="footer">
-            <p>Email ini dikirim secara otomatis dari sistem PPDB Online.<br>
-            Jika ada pertanyaan, hubungi admin di admin@ppdb.com</p>
+        <div class="alert">
+            <strong>⚠️ Penting:</strong><br>
+            • Kode berlaku hingga {{ $expires_at }} WIB<br>
+            • Jangan bagikan kode ini kepada siapa pun<br>
+            • Kode akan kedaluwarsa dalam 5 menit<br>
+            • Jika Anda tidak meminta kode ini, abaikan email ini
         </div>
+        
+        <p>Masukkan kode OTP di atas pada halaman login untuk mengakses akun Anda.</p>
+        
+        <p>Terima kasih,<br>
+        <strong>Tim PPDB Online</strong></p>
+    </div>
+    
+    <div class="footer">
+        <p>Email ini dikirim secara otomatis dari sistem PPDB Online.</p>
+        <p>&copy; 2024 PPDB Online. All rights reserved.</p>
     </div>
 </body>
 </html>

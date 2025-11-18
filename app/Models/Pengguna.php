@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Pengguna extends Model
+class Pengguna extends Authenticatable
 {
     protected $table = 'pengguna';
     protected $fillable = [
@@ -16,4 +16,14 @@ class Pengguna extends Model
         'password_hash',
         'verification_token'
     ];
+    
+    public function getAuthPassword()
+    {
+        return $this->password_hash;
+    }
+    
+    public function getNameAttribute()
+    {
+        return $this->nama;
+    }
 }

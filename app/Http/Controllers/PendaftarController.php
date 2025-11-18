@@ -19,9 +19,7 @@ class PendaftarController extends Controller
         $stats = [
             'status' => $pendaftar->status ?? 'DRAFT',
             'progress' => $this->calculateProgress($pendaftar),
-            'gelombang_aktif' => Gelombang::where('tgl_mulai', '<=', now())
-                ->where('tgl_selesai', '>=', now())
-                ->first(),
+            'gelombang_aktif' => Gelombang::where('is_active', true)->first(),
         ];
         
         $jurusan = Jurusan::all();
@@ -33,10 +31,8 @@ class PendaftarController extends Controller
     {
         $user = Auth::user();
         $pendaftar = Pendaftar::where('user_id', $user->id)->with(['dataSiswa', 'dataOrtu', 'asalSekolah'])->first();
-        $jurusan = Jurusan::all();
-        $gelombang = Gelombang::where('tgl_mulai', '<=', now())
-            ->where('tgl_selesai', '>=', now())
-            ->first();
+        $jurusan = Jurusan::withCount('pendaftar')->get();
+        $gelombang = Gelombang::where('is_active', true)->first();
         $wilayah = \App\Models\Wilayah::all();
             
         return view('pendaftaran.form', compact('pendaftar', 'jurusan', 'gelombang', 'wilayah'));
@@ -61,15 +57,20 @@ class PendaftarController extends Controller
             'kk' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'akta' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'foto' => 'required|file|mimes:jpg,jpeg,png|max:1024',
-            'bukti_bayar' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'nominal' => 'required|numeric|min:150000',
-            'tgl_bayar' => 'required|date',
-            'nama_pengirim' => 'required|string|max:100',
         ]);
         
-        $gelombang = Gelombang::where('tgl_mulai', '<=', now())
-            ->where('tgl_selesai', '>=', now())
-            ->first();
+        // Check quota availability
+        $jurusan = Jurusan::withCount('pendaftar')->find($request->jurusan_id);
+        $existingPendaftar = Pendaftar::where('user_id', $user->id)->first();
+        
+        // Allow if user is updating their existing registration with same jurusan
+        if (!$existingPendaftar || $existingPendaftar->jurusan_id != $request->jurusan_id) {
+            if ($jurusan->pendaftar_count >= $jurusan->kuota) {
+                return back()->withErrors(['jurusan_id' => 'Kuota jurusan ' . $jurusan->nama . ' sudah penuh!'])->withInput();
+            }
+        }
+        
+        $gelombang = Gelombang::where('is_active', true)->first();
             
         $pendaftar = Pendaftar::updateOrCreate(
             ['user_id' => $user->id],
@@ -77,7 +78,7 @@ class PendaftarController extends Controller
                 'jurusan_id' => $request->jurusan_id,
                 'gelombang_id' => $gelombang ? $gelombang->id : null,
                 'status' => 'DRAFT',
-                'no_pendaftaran' => 'PPDB' . date('Y') . str_pad(Pendaftar::count() + 1, 4, '0', STR_PAD_LEFT)
+                'no_pendaftaran' => $this->generateNoPendaftaran()
             ]
         );
         
@@ -93,6 +94,8 @@ class PendaftarController extends Controller
                 'tgl_lahir' => $request->tgl_lahir,
                 'alamat' => $request->alamat,
                 'wilayah_id' => $request->wilayah_id,
+                'lat' => $request->latitude,
+                'lng' => $request->longitude,
             ]
         );
         
@@ -151,24 +154,7 @@ class PendaftarController extends Controller
             }
         }
         
-        // Handle payment
-        if ($request->hasFile('bukti_bayar')) {
-            $file = $request->file('bukti_bayar');
-            $filename = time() . '_bukti_bayar.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/pembayaran'), $filename);
-            
-            \App\Models\PendaftarPembayaran::updateOrCreate(
-                ['pendaftar_id' => $pendaftar->id],
-                [
-                    'nominal' => $request->nominal,
-                    'tgl_bayar' => $request->tgl_bayar,
-                    'tanggal_transfer' => $request->tgl_bayar,
-                    'nama_pengirim' => $request->nama_pengirim,
-                    'bukti_pembayaran' => 'uploads/pembayaran/' . $filename,
-                    'status_verifikasi' => 'PENDING'
-                ]
-            );
-        }
+
         
         // Update status to SUBMITTED
         $pendaftar->update(['status' => 'SUBMITTED']);
@@ -246,15 +232,39 @@ class PendaftarController extends Controller
         $user = Auth::user();
         $pendaftar = Pendaftar::where('user_id', $user->id)->first();
         
-        return view('pendaftaran.pembayaran', compact('pendaftar'));
+        // Check if admin verification passed
+        $canPay = false;
+        if ($pendaftar && $pendaftar->status_berkas == 'VERIFIED' && $pendaftar->status_data == 'VERIFIED') {
+            $canPay = true;
+        }
+        
+        return view('pendaftaran.pembayaran', compact('pendaftar', 'canPay'));
     }
     
     public function status()
     {
         $user = Auth::user();
-        $pendaftar = Pendaftar::where('user_id', $user->id)->first();
+        $pendaftar = Pendaftar::where('user_id', $user->id)
+            ->with(['dataSiswa', 'dataOrtu', 'asalSekolah', 'jurusan', 'berkas'])
+            ->first();
         
         return view('pendaftaran.status', compact('pendaftar'));
+    }
+    
+
+    
+    public function cetakKartu()
+    {
+        $user = Auth::user();
+        $pendaftar = Pendaftar::with(['dataSiswa', 'jurusan'])
+            ->where('user_id', $user->id)
+            ->first();
+            
+        if (!$pendaftar) {
+            return redirect('/dashboard/pendaftar')->with('error', 'Data pendaftar tidak ditemukan');
+        }
+        
+        return view('pendaftaran.cetak-kartu', compact('pendaftar'));
     }
     
     public function storePembayaran(Request $request)
@@ -282,61 +292,194 @@ class PendaftarController extends Controller
                 ['pendaftar_id' => $pendaftar->id],
                 [
                     'nominal' => $request->nominal,
-                    'tgl_bayar' => $request->tanggal_transfer,
+                    'tanggal_transfer' => $request->tanggal_transfer,
                     'nama_pengirim' => $request->nama_pengirim,
-                    'bukti_bayar' => 'uploads/pembayaran/' . $filename,
+                    'bukti_pembayaran' => 'uploads/pembayaran/' . $filename,
                     'status_verifikasi' => 'PENDING',
                     'catatan' => $request->catatan
                 ]
             );
         }
         
-        return redirect('/pendaftaran/status')->with('success', 'Bukti pembayaran berhasil diupload');
+        return redirect('/dashboard/pendaftar')->with('success', 'Bukti pembayaran berhasil diupload');
     }
     
     public function autoSave(Request $request)
     {
-        $user = Auth::user();
-        
-        // Create or get pendaftar record
-        $pendaftar = Pendaftar::firstOrCreate(
-            ['user_id' => $user->id],
-            [
-                'status' => 'DRAFT',
-                'no_pendaftaran' => 'PPDB' . date('Y') . str_pad(Pendaftar::count() + 1, 4, '0', STR_PAD_LEFT)
-            ]
-        );
-        
-        // Save data siswa if provided
-        if ($request->has('nama')) {
-            \App\Models\PendaftarDataSiswa::updateOrCreate(
-                ['pendaftar_id' => $pendaftar->id],
-                $request->only(['nik', 'nisn', 'nama', 'jk', 'tmp_lahir', 'tgl_lahir', 'alamat', 'wilayah_id'])
+        try {
+            $user = Auth::user();
+            
+            // Create or get pendaftar record
+            $pendaftar = Pendaftar::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'status' => 'DRAFT',
+                    'no_pendaftaran' => $this->generateNoPendaftaran()
+                ]
             );
+            
+            // Handle file uploads
+            $berkasTypes = [
+                'ijazah' => 'IJAZAH',
+                'kk' => 'KK', 
+                'akta' => 'AKTA',
+                'foto' => 'LAINNYA',
+                'kip' => 'KIP',
+                'surat_sehat' => 'LAINNYA'
+            ];
+            
+            foreach ($berkasTypes as $field => $jenis) {
+                if ($request->hasFile($field)) {
+                    $file = $request->file($field);
+                    $filename = time() . '_' . $field . '.' . $file->getClientOriginalExtension();
+                    $fileSize = round($file->getSize() / 1024, 2);
+                    $file->move(public_path('uploads/berkas'), $filename);
+                    
+                    \App\Models\PendaftarBerkas::updateOrCreate(
+                        ['pendaftar_id' => $pendaftar->id, 'jenis' => $jenis],
+                        [
+                            'nama_file' => $filename,
+                            'url' => 'uploads/berkas/' . $filename,
+                            'ukuran_kb' => $fileSize,
+                            'status_verifikasi' => 'PENDING'
+                        ]
+                    );
+                }
+            }
+            
+            // Handle payment file
+            if ($request->hasFile('bukti_bayar')) {
+                $file = $request->file('bukti_bayar');
+                $filename = time() . '_bukti_bayar.' . $file->getClientOriginalExtension();
+                $file->move(public_path('uploads/pembayaran'), $filename);
+                
+                \App\Models\PendaftarPembayaran::updateOrCreate(
+                    ['pendaftar_id' => $pendaftar->id],
+                    [
+                        'nominal' => $request->nominal ?? 0,
+                        'tanggal_transfer' => $request->tgl_bayar ?? now(),
+                        'nama_pengirim' => $request->nama_pengirim ?? '',
+                        'bukti_pembayaran' => 'uploads/pembayaran/' . $filename,
+                        'status_verifikasi' => 'PENDING'
+                    ]
+                );
+            }
+            
+            // Save data siswa if provided
+            if ($request->has('nama')) {
+                $dataSiswa = array_filter([
+                    'nik' => $request->nik,
+                    'nisn' => $request->nisn,
+                    'nama' => $request->nama,
+                    'jk' => $request->jk,
+                    'tmp_lahir' => $request->tmp_lahir,
+                    'tgl_lahir' => $request->tgl_lahir,
+                    'alamat' => $request->alamat,
+                    'wilayah_id' => $request->wilayah_id,
+                    'lat' => $request->latitude,
+                    'lng' => $request->longitude,
+                ]);
+                
+                \App\Models\PendaftarDataSiswa::updateOrCreate(
+                    ['pendaftar_id' => $pendaftar->id],
+                    $dataSiswa
+                );
+            }
+            
+            // Save data orang tua if provided
+            if ($request->has('nama_ayah') || $request->has('nama_ibu')) {
+                $dataOrtu = array_filter([
+                    'nama_ayah' => $request->nama_ayah,
+                    'pekerjaan_ayah' => $request->pekerjaan_ayah,
+                    'hp_ayah' => $request->hp_ayah,
+                    'nama_ibu' => $request->nama_ibu,
+                    'pekerjaan_ibu' => $request->pekerjaan_ibu,
+                    'hp_ibu' => $request->hp_ibu,
+                    'wali_nama' => $request->wali_nama,
+                    'wali_hp' => $request->wali_hp,
+                ]);
+                
+                \App\Models\PendaftarDataOrtu::updateOrCreate(
+                    ['pendaftar_id' => $pendaftar->id],
+                    $dataOrtu
+                );
+            }
+            
+            // Save asal sekolah if provided
+            if ($request->has('nama_sekolah')) {
+                $asalSekolah = array_filter([
+                    'npsn' => $request->npsn,
+                    'nama_sekolah' => $request->nama_sekolah,
+                    'kabupaten' => $request->kabupaten,
+                    'nilai_rata' => $request->nilai_rata,
+                ]);
+                
+                \App\Models\PendaftarAsalSekolah::updateOrCreate(
+                    ['pendaftar_id' => $pendaftar->id],
+                    $asalSekolah
+                );
+            }
+            
+            // Save payment data if provided
+            if ($request->has('nominal') || $request->has('tgl_bayar') || $request->has('nama_pengirim')) {
+                $pembayaran = array_filter([
+                    'nominal' => $request->nominal,
+                    'tanggal_transfer' => $request->tgl_bayar,
+                    'nama_pengirim' => $request->nama_pengirim,
+                ]);
+                
+                if (!empty($pembayaran)) {
+                    \App\Models\PendaftarPembayaran::updateOrCreate(
+                        ['pendaftar_id' => $pendaftar->id],
+                        array_merge($pembayaran, ['status_verifikasi' => 'PENDING'])
+                    );
+                }
+            }
+            
+            // Update jurusan if provided with quota check
+            if ($request->has('jurusan_id')) {
+                $jurusan = Jurusan::withCount('pendaftar')->find($request->jurusan_id);
+                $existingPendaftar = Pendaftar::where('user_id', $user->id)->first();
+                
+                // Allow if user is updating their existing registration with same jurusan
+                if (!$existingPendaftar || $existingPendaftar->jurusan_id != $request->jurusan_id) {
+                    if ($jurusan && $jurusan->pendaftar_count >= $jurusan->kuota) {
+                        return response()->json(['success' => false, 'message' => 'Kuota jurusan ' . $jurusan->nama . ' sudah penuh!'], 400);
+                    }
+                }
+                
+                $pendaftar->update(['jurusan_id' => $request->jurusan_id]);
+            }
+            
+            return response()->json(['success' => true, 'message' => 'Data berhasil disimpan otomatis']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal menyimpan data: ' . $e->getMessage()], 500);
         }
+    }
+    
+
+    
+    private function generateNoPendaftaran()
+    {
+        do {
+            $lastPendaftar = Pendaftar::whereYear('created_at', date('Y'))
+                ->orderBy('id', 'desc')
+                ->first();
+            
+            if ($lastPendaftar) {
+                $lastNumber = (int) substr($lastPendaftar->no_pendaftaran, -4);
+                $newNumber = $lastNumber + 1;
+            } else {
+                $newNumber = 1;
+            }
+            
+            $noPendaftaran = 'PPDB' . date('Y') . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+            
+            // Check if this number already exists
+            $exists = Pendaftar::where('no_pendaftaran', $noPendaftaran)->exists();
+        } while ($exists);
         
-        // Save data orang tua if provided
-        if ($request->has('nama_ayah')) {
-            \App\Models\PendaftarDataOrtu::updateOrCreate(
-                ['pendaftar_id' => $pendaftar->id],
-                $request->only(['nama_ayah', 'pekerjaan_ayah', 'hp_ayah', 'nama_ibu', 'pekerjaan_ibu', 'hp_ibu', 'wali_nama', 'wali_hp'])
-            );
-        }
-        
-        // Save asal sekolah if provided
-        if ($request->has('nama_sekolah')) {
-            \App\Models\PendaftarAsalSekolah::updateOrCreate(
-                ['pendaftar_id' => $pendaftar->id],
-                $request->only(['npsn', 'nama_sekolah', 'kabupaten', 'nilai_rata'])
-            );
-        }
-        
-        // Update jurusan if provided
-        if ($request->has('jurusan_id')) {
-            $pendaftar->update(['jurusan_id' => $request->jurusan_id]);
-        }
-        
-        return response()->json(['success' => true]);
+        return $noPendaftaran;
     }
     
     private function calculateProgress($pendaftar)

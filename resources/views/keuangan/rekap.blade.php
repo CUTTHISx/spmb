@@ -2,179 +2,163 @@
 
 @section('title', 'Rekap Keuangan - PPDB Online')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/layouts/dashboard.css') }}">
+@endsection
+
 @section('content')
 <div class="container mt-4">
+    <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Rekap Keuangan PPDB</h5>
+            <div class="card bg-gradient-success text-white border-0 shadow-lg">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div class="bg-white bg-opacity-20 rounded-circle p-3">
+                                <i class="fas fa-chart-line fa-2x"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h2 class="fw-bold mb-1">Rekap Keuangan</h2>
+                            <p class="mb-0 opacity-90">Laporan pemasukan biaya pendaftaran per gelombang dan jurusan</p>
+                        </div>
+                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Export Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
                 <div class="card-body">
-                    <!-- Filter & Export Controls -->
-                    <div class="row mb-4">
-                        <div class="col-md-2">
-                            <select class="form-select" id="filterGelombang">
-                                <option value="">Semua Gelombang</option>
-                                <option value="1">Gelombang 1</option>
-                                <option value="2">Gelombang 2</option>
-                                <option value="3">Gelombang 3</option>
-                            </select>
+                    <form id="filterForm" method="GET">
+                        <div class="row align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label">Tanggal Mulai</label>
+                                <input type="date" class="form-control" name="start_date" value="{{ request('start_date', date('Y-m-01')) }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Tanggal Selesai</label>
+                                <input type="date" class="form-control" name="end_date" value="{{ request('end_date', date('Y-m-d')) }}">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter me-1"></i>Filter
+                                </button>
+                                <a href="/keuangan/rekap" class="btn btn-outline-secondary ms-2">
+                                    <i class="fas fa-refresh me-1"></i>Reset
+                                </a>
+                            </div>
+                            <div class="col-md-3 text-end">
+                                <button type="button" class="btn btn-success" onclick="exportExcel()">
+                                    <i class="fas fa-file-excel me-1"></i>Export Excel
+                                </button>
+                                <button type="button" class="btn btn-danger ms-2" onclick="exportPDF()">
+                                    <i class="fas fa-file-pdf me-1"></i>Export PDF
+                                </button>
+                            </div>
                         </div>
-                        <div class="col-md-2">
-                            <select class="form-select" id="filterJurusan">
-                                <option value="">Semua Jurusan</option>
-                                <option value="PPLG">PPLG</option>
-                                <option value="DKV">DKV</option>
-                                <option value="AKUNTANSI">Akuntansi</option>
-                                <option value="ANIMASI">Animasi</option>
-                                <option value="BDP">BDP</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <input type="date" class="form-control" id="startDate">
-                        </div>
-                        <div class="col-md-2">
-                            <input type="date" class="form-control" id="endDate">
-                        </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-primary me-2" onclick="filterData()">
-                                <i class="fas fa-filter me-1"></i>Filter
-                            </button>
-                            <button class="btn btn-success me-2" onclick="exportExcel()">
-                                <i class="fas fa-file-excel me-1"></i>Excel
-                            </button>
-                            <button class="btn btn-danger" onclick="exportPDF()">
-                                <i class="fas fa-file-pdf me-1"></i>PDF
-                            </button>
-                        </div>
-                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <!-- Summary Cards -->
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="card bg-primary text-white">
-                                <div class="card-body text-center">
-                                    <h4>Rp 15.750.000</h4>
-                                    <small>Total Pemasukan</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body text-center">
-                                    <h4>63</h4>
-                                    <small>Pembayaran Lunas</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-warning text-white">
-                                <div class="card-body text-center">
-                                    <h4>12</h4>
-                                    <small>Menunggu Bayar</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-info text-white">
-                                <div class="card-body text-center">
-                                    <h4>Rp 250.000</h4>
-                                    <small>Rata-rata per Siswa</small>
-                                </div>
-                            </div>
-                        </div>
+    <!-- Rekap per Gelombang -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-wave-square text-primary me-2"></i>
+                        Rekap per Gelombang
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0 fw-bold">Gelombang</th>
+                                    <th class="border-0 fw-bold">Jumlah Pembayaran</th>
+                                    <th class="border-0 fw-bold">Total Pemasukan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($rekapGelombang as $rekap)
+                                <tr>
+                                    <td class="py-3">
+                                        <div class="fw-bold">{{ $rekap->nama_gelombang }}</div>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge bg-primary">{{ $rekap->jumlah_pembayaran }} pembayaran</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="fw-bold text-success">Rp {{ number_format($rekap->total_pemasukan, 0, ',', '.') }}</span>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="3" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Belum ada data pembayaran</p>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <!-- Chart Section -->
-                    <div class="row mb-4">
-                        <div class="col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Tren Pemasukan Harian</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="revenueChart" height="100"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Pemasukan per Jurusan</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="jurusanChart" height="200"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Detailed Table -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="mb-0">Detail Pembayaran</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>No Pendaftaran</th>
-                                            <th>Nama Pendaftar</th>
-                                            <th>Jurusan</th>
-                                            <th>Gelombang</th>
-                                            <th>Nominal</th>
-                                            <th>Tanggal Bayar</th>
-                                            <th>Metode</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>PPDB-2024-001</td>
-                                            <td>Ahmad Rizki Pratama</td>
-                                            <td><span class="badge bg-primary">PPLG</span></td>
-                                            <td>Gelombang 1</td>
-                                            <td class="fw-bold text-success">Rp 250.000</td>
-                                            <td>12 Nov 2024</td>
-                                            <td>Transfer Bank</td>
-                                            <td><span class="badge bg-success">Lunas</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>PPDB-2024-002</td>
-                                            <td>Siti Nurhaliza</td>
-                                            <td><span class="badge bg-info">DKV</span></td>
-                                            <td>Gelombang 1</td>
-                                            <td class="fw-bold text-success">Rp 250.000</td>
-                                            <td>11 Nov 2024</td>
-                                            <td>E-Wallet</td>
-                                            <td><span class="badge bg-success">Lunas</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>PPDB-2024-003</td>
-                                            <td>Budi Santoso</td>
-                                            <td><span class="badge bg-warning">Akuntansi</span></td>
-                                            <td>Gelombang 1</td>
-                                            <td class="fw-bold text-success">Rp 250.000</td>
-                                            <td>10 Nov 2024</td>
-                                            <td>Virtual Account</td>
-                                            <td><span class="badge bg-success">Lunas</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td>PPDB-2024-004</td>
-                                            <td>Dewi Sartika</td>
-                                            <td><span class="badge bg-danger">Animasi</span></td>
-                                            <td>Gelombang 2</td>
-                                            <td class="fw-bold text-warning">Rp 250.000</td>
-                                            <td>-</td>
-                                            <td>-</td>
-                                            <td><span class="badge bg-warning">Menunggu</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+    <!-- Rekap per Jurusan -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-graduation-cap text-info me-2"></i>
+                        Rekap per Jurusan
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0 fw-bold">Jurusan</th>
+                                    <th class="border-0 fw-bold">Jumlah Pembayaran</th>
+                                    <th class="border-0 fw-bold">Total Pemasukan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($rekapJurusan as $rekap)
+                                <tr>
+                                    <td class="py-3">
+                                        <div class="fw-bold">{{ $rekap->nama_jurusan }}</div>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge bg-info">{{ $rekap->jumlah_pembayaran }} pembayaran</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="fw-bold text-success">Rp {{ number_format($rekap->total_pemasukan, 0, ',', '.') }}</span>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="3" class="text-center py-4">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Belum ada data pembayaran</p>
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -184,79 +168,15 @@
 @endsection
 
 @section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Revenue Trend Chart
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    new Chart(revenueCtx, {
-        type: 'line',
-        data: {
-            labels: ['1 Nov', '2 Nov', '3 Nov', '4 Nov', '5 Nov', '6 Nov', '7 Nov'],
-            datasets: [{
-                label: 'Pemasukan Harian',
-                data: [1250000, 2000000, 1750000, 2250000, 1500000, 2750000, 2250000],
-                borderColor: '#28a745',
-                backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return 'Rp ' + value.toLocaleString();
-                        }
-                    }
-                }
-            }
-        }
-    });
-
-    // Jurusan Pie Chart
-    const jurusanCtx = document.getElementById('jurusanChart').getContext('2d');
-    new Chart(jurusanCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['PPLG', 'DKV', 'Akuntansi', 'Animasi', 'BDP'],
-            datasets: [{
-                data: [5250000, 3750000, 3000000, 2250000, 1500000],
-                backgroundColor: ['#007bff', '#17a2b8', '#ffc107', '#dc3545', '#6f42c1'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-});
-
-function filterData() {
-    console.log('Filtering data...');
-}
-
 function exportExcel() {
-    alert('Export Excel functionality will be implemented');
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = '/keuangan/export/excel?' + params.toString();
 }
 
 function exportPDF() {
-    alert('Export PDF functionality will be implemented');
+    const params = new URLSearchParams(window.location.search);
+    window.location.href = '/keuangan/export/pdf?' + params.toString();
 }
 </script>
 @endsection

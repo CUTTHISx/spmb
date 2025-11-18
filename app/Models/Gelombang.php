@@ -12,6 +12,7 @@ class Gelombang extends Model
     protected $casts = [
         'tgl_mulai' => 'date',
         'tgl_selesai' => 'date',
+        'is_active' => 'boolean',
     ];
     
     public function pendaftar()

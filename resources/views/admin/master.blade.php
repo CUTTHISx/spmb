@@ -2,32 +2,19 @@
 
 @section('title', 'Master Data - PPDB Online')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/layouts/dashboard.css') }}">
+@endsection
+
 @section('content')
 <div class="container mt-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card bg-gradient-primary text-white border-0 shadow-lg">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center">
-                        <div class="me-3">
-                            <div class="bg-white bg-opacity-20 rounded-circle p-3">
-                                <i class="fas fa-database fa-2x"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <h2 class="fw-bold mb-1">Master Data PPDB</h2>
-                            <p class="mb-0 opacity-90">Kelola data master sistem penerimaan peserta didik baru</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Navigation Tabs -->
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="card system-status-card mb-4">
         <div class="card-header bg-white border-0 py-3">
+            <h5 class="card-title mb-3 fw-bold">
+                <i class="fas fa-database text-primary me-2"></i>
+                Master Data PPDB
+            </h5>
             <ul class="nav nav-tabs card-header-tabs" id="masterDataTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="jurusan-tab" data-bs-toggle="tab" data-bs-target="#jurusan" type="button" role="tab">
@@ -137,7 +124,7 @@
                                     <th>Tanggal Mulai</th>
                                     <th>Tanggal Selesai</th>
                                     <th>Biaya Daftar</th>
-                                    <th>Status</th>
+                                    <th>Status Aktif</th>
                                     <th>Pendaftar</th>
                                     <th>Aksi</th>
                                 </tr>
@@ -157,16 +144,23 @@
                                     <td>{{ $selesai->format('d M Y') }}</td>
                                     <td><span class="badge bg-success">Rp {{ number_format($g->biaya_daftar, 0, ',', '.') }}</span></td>
                                     <td>
-                                        @if($g->status == 'aktif')
-                                            <span class="badge bg-success">Aktif</span>
+                                        @if($g->is_active)
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-success"><i class="fas fa-check"></i> Aktif</span>
+                                                <button class="btn btn-outline-warning btn-sm" onclick="deactivateGelombang({{ $g->id }})" title="Nonaktifkan">
+                                                    <i class="fas fa-stop"></i>
+                                                </button>
+                                            </div>
                                         @else
-                                            <span class="badge bg-secondary">Non-Aktif</span>
+                                            <button class="btn btn-outline-success btn-sm" onclick="activateGelombang({{ $g->id }})" title="Aktifkan">
+                                                <i class="fas fa-play"></i> Aktifkan
+                                            </button>
                                         @endif
                                     </td>
                                     <td><span class="badge bg-primary">{{ $pendaftar }}</span></td>
                                     <td>
                                         <div class="btn-group" role="group">
-                                            <button class="btn btn-outline-primary btn-sm" onclick="editGelombang({{ $g->id }}, '{{ $g->nama }}', '{{ $g->tgl_mulai }}', '{{ $g->tgl_selesai }}', {{ $g->biaya_daftar }}, '{{ $g->status }}')" title="Edit">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="editGelombang({{ $g->id }}, '{{ $g->nama }}', '{{ $g->tgl_mulai }}', '{{ $g->tgl_selesai }}', {{ $g->biaya_daftar }})" title="Edit">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <button class="btn btn-outline-danger btn-sm" onclick="deleteGelombang({{ $g->id }})" title="Hapus">
@@ -207,7 +201,7 @@
                         <div class="col-md-3">
                             <select class="form-select" id="filterProvinsi">
                                 <option value="">Semua Provinsi</option>
-                                @foreach($wilayah ?? [] as $w)
+                                @foreach($wilayah->unique('provinsi') ?? [] as $w)
                                     <option value="{{ $w->provinsi }}">{{ $w->provinsi }}</option>
                                 @endforeach
                             </select>
@@ -325,13 +319,7 @@
                         <input type="number" class="form-control" id="gelombangBiaya" min="0" required>
                         <div class="form-text">Masukkan biaya dalam rupiah</div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <select class="form-select" id="gelombangStatus" required>
-                            <option value="aktif">Aktif</option>
-                            <option value="non-aktif">Non-Aktif</option>
-                        </select>
-                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -463,17 +451,15 @@ function resetGelombangForm() {
     document.getElementById('gelombangForm').reset();
     document.getElementById('gelombangId').value = '';
     document.getElementById('gelombangBiaya').value = 250000;
-    document.getElementById('gelombangStatus').value = 'aktif';
     document.getElementById('gelombangModalTitle').textContent = 'Tambah Gelombang';
 }
 
-function editGelombang(id, nama, mulai, selesai, biaya, status) {
+function editGelombang(id, nama, mulai, selesai, biaya) {
     document.getElementById('gelombangId').value = id;
     document.getElementById('gelombangNama').value = nama;
     document.getElementById('gelombangMulai').value = mulai;
     document.getElementById('gelombangSelesai').value = selesai;
     document.getElementById('gelombangBiaya').value = biaya;
-    document.getElementById('gelombangStatus').value = status;
     document.getElementById('gelombangModalTitle').textContent = 'Edit Gelombang';
     new bootstrap.Modal(document.getElementById('gelombangModal')).show();
 }
@@ -499,6 +485,48 @@ function deleteGelombang(id) {
     }
 }
 
+function activateGelombang(id) {
+    if(confirm('Aktifkan gelombang ini? Gelombang lain akan dinonaktifkan.')) {
+        fetch(`/admin/gelombang/${id}/activate`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Gelombang berhasil diaktifkan');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Gagal mengaktifkan gelombang'));
+            }
+        });
+    }
+}
+
+function deactivateGelombang(id) {
+    if(confirm('Nonaktifkan gelombang ini? Pendaftaran akan ditutup sementara.')) {
+        fetch(`/admin/gelombang/${id}/deactivate`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Gelombang berhasil dinonaktifkan');
+                location.reload();
+            } else {
+                alert('Error: ' + (data.message || 'Gagal menonaktifkan gelombang'));
+            }
+        });
+    }
+}
+
 document.getElementById('gelombangForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const id = document.getElementById('gelombangId').value;
@@ -506,8 +534,7 @@ document.getElementById('gelombangForm').addEventListener('submit', function(e) 
         nama: document.getElementById('gelombangNama').value,
         tgl_mulai: document.getElementById('gelombangMulai').value,
         tgl_selesai: document.getElementById('gelombangSelesai').value,
-        biaya_daftar: document.getElementById('gelombangBiaya').value,
-        status: document.getElementById('gelombangStatus').value
+        biaya_daftar: document.getElementById('gelombangBiaya').value
     };
     
     const url = id ? `/admin/gelombang/${id}` : '/admin/gelombang';

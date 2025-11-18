@@ -54,5 +54,14 @@ class UserSeeder extends Seeder
             'role' => 'pendaftar',
             'email_verified_at' => now(),
         ]);
+
+        // Pendaftar Bikri
+        User::create([
+            'name' => 'Bikri Pendaftar',
+            'email' => 'bikri@ppdb.com',
+            'password' => Hash::make('bikri123'),
+            'role' => 'pendaftar',
+            'email_verified_at' => now(),
+        ]);
     }
 }

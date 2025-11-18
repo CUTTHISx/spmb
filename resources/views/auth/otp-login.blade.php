@@ -2,34 +2,156 @@
 
 @section('content')
 <div class="text-center mb-4">
-    <h4>Verifikasi OTP</h4>
+    <div class="otp-icon mb-3">
+        <i class="fas fa-shield-alt fa-4x text-info"></i>
+    </div>
+    <h4 class="fw-bold text-dark mb-1">Login dengan OTP</h4>
     <p class="text-muted">Masukkan email untuk mendapatkan kode OTP</p>
 </div>
-                    <!-- Email Form -->
-                    <form id="emailForm" style="display: block;">
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Kirim OTP</button>
-                    </form>
 
-                    <!-- OTP Form -->
-                    <form id="otpForm" style="display: none;">
-                        <div class="mb-3">
-                            <label class="form-label">Kode OTP</label>
-                            <input type="text" class="form-control text-center" id="otp" maxlength="6" placeholder="000000" style="font-size: 24px; letter-spacing: 5px;">
-                        </div>
-                        <button type="submit" class="btn btn-success w-100">Verifikasi OTP</button>
-                        <button type="button" class="btn btn-link w-100" onclick="backToEmail()">Kembali</button>
-                    </form>
+@if (session('success'))
+    <div class="alert alert-success border-0 shadow-sm mb-4">
+        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
+    </div>
+@endif
 
+@if (session('error'))
+    <div class="alert alert-danger border-0 shadow-sm mb-4">
+        <i class="fas fa-exclamation-circle me-2"></i>{{ session('error') }}
+    </div>
+@endif
+
+<!-- Email Form -->
+<div id="emailForm" class="otp-form">
+    <form id="sendOtpForm">
+        @csrf
+        <div class="mb-4">
+            <label for="email" class="form-label fw-medium text-dark">
+                <i class="fas fa-envelope me-2 text-info"></i>Email
+            </label>
+            <input id="email" class="form-control form-control-lg border-0 shadow-sm" 
+                   type="email" name="email" placeholder="Masukkan email Anda" required>
+            <div id="emailError" class="text-danger small mt-2" style="display: none;"></div>
+        </div>
+
+        <div class="d-grid mb-4">
+            <button type="submit" class="btn btn-info btn-lg shadow-sm" id="sendOtpBtn">
+                <i class="fas fa-paper-plane me-2"></i>Kirim Kode OTP
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- OTP Form -->
+<div id="otpForm" class="otp-form" style="display: none;">
+    <div class="alert alert-info border-0 shadow-sm mb-4">
+        <i class="fas fa-info-circle me-2"></i>
+        <span id="otpMessage">Kode OTP telah dikirim ke admin. Silakan tunggu konfirmasi.</span>
+    </div>
+
+    <form id="verifyOtpForm">
+        @csrf
+        <div class="mb-4">
+            <label for="otp" class="form-label fw-medium text-dark">
+                <i class="fas fa-key me-2 text-info"></i>Kode OTP
+            </label>
+            <input id="otp" class="form-control form-control-lg border-0 shadow-sm text-center" 
+                   type="text" name="otp" placeholder="000000" maxlength="6" required>
+            <div id="otpError" class="text-danger small mt-2" style="display: none;"></div>
+        </div>
+
+        <div class="d-grid mb-4">
+            <button type="submit" class="btn btn-success btn-lg shadow-sm" id="verifyOtpBtn">
+                <i class="fas fa-sign-in-alt me-2"></i>Verifikasi & Login
+            </button>
+        </div>
+
+        <div class="text-center">
+            <button type="button" class="btn btn-outline-secondary" onclick="backToEmail()">
+                <i class="fas fa-arrow-left me-2"></i>Kembali ke Email
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Back to Login -->
+<div class="text-center">
+    <a href="{{ route('login') }}" class="text-decoration-none text-info">
+        <i class="fas fa-arrow-left me-1"></i>Kembali ke Login Normal
+    </a>
+</div>
+
+<style>
+.otp-form {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.form-control:focus {
+    border-color: #17a2b8;
+    box-shadow: 0 0 0 0.2rem rgba(23, 162, 184, 0.15);
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(23, 162, 184, 0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+}
+
+.otp-icon {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+#otp {
+    font-size: 1.5rem;
+    letter-spacing: 0.5rem;
+    font-weight: bold;
+}
+</style>
 
 <script>
-document.getElementById('emailForm').addEventListener('submit', function(e) {
+document.getElementById('sendOtpForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const email = document.getElementById('email').value;
+    const btn = document.getElementById('sendOtpBtn');
+    const originalText = btn.innerHTML;
+    
+    // Disable button and show loading
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mengirim...';
     
     fetch('/send-otp', {
         method: 'POST',
@@ -42,30 +164,38 @@ document.getElementById('emailForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show notification with OTP
-            if (data.otp) {
-                showNotification('🔑 Kode OTP Anda: ' + data.otp, 'success');
-                // Also show in console for development
-                console.log('OTP Code:', data.otp);
-            }
-            
-            // Switch to OTP form
             document.getElementById('emailForm').style.display = 'none';
             document.getElementById('otpForm').style.display = 'block';
-            document.getElementById('otp').focus();
+            
+            if (data.show_notification && data.otp) {
+                document.getElementById('otpMessage').innerHTML = 
+                    '<strong>Development Mode:</strong> Kode OTP Anda adalah: <strong>' + data.otp + '</strong>';
+            }
         } else {
-            showNotification(data.message, 'error');
+            document.getElementById('emailError').textContent = data.message;
+            document.getElementById('emailError').style.display = 'block';
         }
     })
     .catch(error => {
-        showNotification('Terjadi kesalahan', 'error');
+        document.getElementById('emailError').textContent = 'Terjadi kesalahan. Silakan coba lagi.';
+        document.getElementById('emailError').style.display = 'block';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     });
 });
 
-document.getElementById('otpForm').addEventListener('submit', function(e) {
+document.getElementById('verifyOtpForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const otp = document.getElementById('otp').value;
+    const btn = document.getElementById('verifyOtpBtn');
+    const originalText = btn.innerHTML;
+    
+    // Disable button and show loading
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Memverifikasi...';
     
     fetch('/verify-otp', {
         method: 'POST',
@@ -78,42 +208,34 @@ document.getElementById('otpForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showNotification(data.message, 'success');
-            setTimeout(() => {
-                window.location.href = data.redirect;
-            }, 1000);
+            window.location.href = data.redirect;
         } else {
-            showNotification(data.message, 'error');
+            document.getElementById('otpError').textContent = data.message;
+            document.getElementById('otpError').style.display = 'block';
         }
+    })
+    .catch(error => {
+        document.getElementById('otpError').textContent = 'Terjadi kesalahan. Silakan coba lagi.';
+        document.getElementById('otpError').style.display = 'block';
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     });
 });
 
 function backToEmail() {
     document.getElementById('otpForm').style.display = 'none';
     document.getElementById('emailForm').style.display = 'block';
-    document.getElementById('email').focus();
+    document.getElementById('email').value = '';
+    document.getElementById('otp').value = '';
+    document.getElementById('emailError').style.display = 'none';
+    document.getElementById('otpError').style.display = 'none';
 }
 
-function showNotification(message, type) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed shadow-lg`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 350px; font-size: 16px; font-weight: bold; border-radius: 10px;';
-    notification.innerHTML = `
-        <div class="d-flex justify-content-between align-items-center">
-            <span>${message}</span>
-            <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto remove after 15 seconds for OTP
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.remove();
-        }
-    }, 15000);
-}
+// Auto-format OTP input
+document.getElementById('otp').addEventListener('input', function(e) {
+    this.value = this.value.replace(/\D/g, '');
+});
 </script>
 @endsection

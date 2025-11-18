@@ -4,7 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    $jurusan = \App\Models\Jurusan::withCount('pendaftar')->get();
+    return view('welcome', compact('jurusan'));
 });
 
 Route::get('/dashboard', function () {
@@ -19,26 +20,40 @@ Route::middleware('auth')->group(function () {
 
 // Dashboard Routes
 Route::middleware(['auth'])->prefix('dashboard')->group(function () {
-    Route::get('/admin', [App\Http\Controllers\AdminController::class, 'dashboard']);
-    Route::get('/kepsek', [App\Http\Controllers\AdminController::class, 'kepsekDashboard']);
-    Route::get('/keuangan', [App\Http\Controllers\AdminController::class, 'keuanganDashboard']);
+    Route::get('/admin', [App\Http\Controllers\Admin\AdminController::class, 'dashboard']);
+    Route::get('/kepsek', [App\Http\Controllers\Admin\AdminController::class, 'kepsekDashboard']);
+    Route::get('/keuangan', [App\Http\Controllers\KeuanganController::class, 'dashboard']);
     Route::get('/verifikator', [App\Http\Controllers\VerifikatorController::class, 'dashboard']);
     Route::get('/pendaftar', [App\Http\Controllers\PendaftarController::class, 'dashboard']);
 });
 
 // Admin Routes
 Route::middleware(['auth'])->prefix('admin')->group(function () {
-    Route::get('/master', [App\Http\Controllers\AdminController::class, 'masterData']);
-    Route::get('/monitoring', [App\Http\Controllers\AdminController::class, 'monitoring']);
-    Route::get('/peta', [App\Http\Controllers\AdminController::class, 'peta']);
-    Route::get('/akun', [App\Http\Controllers\AdminController::class, 'akunManagement']);
+    Route::get('/master', [App\Http\Controllers\Admin\AdminController::class, 'masterData']);
+    Route::get('/monitoring', [App\Http\Controllers\Admin\MonitoringController::class, 'index']);
+    Route::get('/monitoring/{id}', [App\Http\Controllers\Admin\MonitoringController::class, 'detail']);
+    Route::get('/peta', [App\Http\Controllers\Admin\PetaController::class, 'index']);
+    Route::get('/akun', [App\Http\Controllers\Admin\AkunController::class, 'index']);
+    
+    // Laporan Routes
+    Route::get('/laporan', [App\Http\Controllers\Admin\LaporanController::class, 'index']);
+    Route::get('/export/excel', [App\Http\Controllers\Admin\LaporanController::class, 'exportExcel']);
+    Route::get('/export/pdf', [App\Http\Controllers\Admin\LaporanController::class, 'exportPDF']);
+    
+    // Keputusan Routes
+    Route::get('/keputusan', [App\Http\Controllers\Admin\KeputusanController::class, 'index'])->name('admin.keputusan.index');
+    Route::post('/keputusan', [App\Http\Controllers\Admin\KeputusanController::class, 'store'])->name('admin.keputusan.store');
+    
+
     
     // API Routes for real-time data
     Route::prefix('api')->group(function () {
-        Route::get('/dashboard-stats', [App\Http\Controllers\AdminController::class, 'getDashboardStats']);
-        Route::get('/daily-chart', [App\Http\Controllers\AdminController::class, 'getDailyChart']);
-        Route::get('/jurusan-stats', [App\Http\Controllers\AdminController::class, 'getJurusanStats']);
-        Route::get('/sebaran-data', [App\Http\Controllers\AdminController::class, 'getSebaranData']);
+        Route::get('/dashboard-stats', [App\Http\Controllers\Admin\AdminController::class, 'getDashboardStats']);
+        Route::get('/daily-chart', [App\Http\Controllers\Admin\AdminController::class, 'getDailyChart']);
+        Route::get('/jurusan-stats', [App\Http\Controllers\Admin\AdminController::class, 'getJurusanStats']);
+        Route::get('/sebaran-data', [App\Http\Controllers\Admin\PetaController::class, 'getSebaranData']);
+        Route::get('/map-update', [App\Http\Controllers\Admin\PetaController::class, 'getMapUpdate']);
+        Route::get('/laporan-data', [App\Http\Controllers\Admin\LaporanController::class, 'laporanData']);
     });
 });
 
@@ -46,14 +61,17 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 Route::middleware(['auth'])->prefix('verifikator')->group(function () {
     Route::get('/verifikasi', [App\Http\Controllers\VerifikatorController::class, 'verifikasi']);
     Route::get('/detail/{id}', [App\Http\Controllers\VerifikatorController::class, 'detail']);
-    Route::post('/berkas/{id}', [App\Http\Controllers\VerifikatorController::class, 'updateBerkasStatus']);
-    Route::post('/data/{id}', [App\Http\Controllers\VerifikatorController::class, 'updateDataStatus']);
+    Route::post('/verifikasi/{id}', [App\Http\Controllers\VerifikatorController::class, 'updateVerifikasi']);
 });
 
 // Keuangan Routes
 Route::middleware(['auth'])->prefix('keuangan')->group(function () {
     Route::get('/verifikasi', [App\Http\Controllers\KeuanganController::class, 'verifikasi']);
     Route::post('/payment/{id}', [App\Http\Controllers\KeuanganController::class, 'updatePaymentStatus']);
+    Route::get('/payment-proof/{id}', [App\Http\Controllers\KeuanganController::class, 'getPaymentProof']);
+    Route::get('/rekap', [App\Http\Controllers\Keuangan\RekapController::class, 'index']);
+    Route::get('/export/excel', [App\Http\Controllers\Keuangan\RekapController::class, 'exportExcel']);
+    Route::get('/export/pdf', [App\Http\Controllers\Keuangan\RekapController::class, 'exportPDF']);
 });
 
 // Pendaftar Routes
@@ -63,6 +81,8 @@ Route::middleware(['auth'])->prefix('pendaftar')->group(function () {
     Route::put('/update', [App\Http\Controllers\PendaftarController::class, 'update']);
 });
 
+
+
 // Pendaftaran Routes (for form views)
 Route::middleware(['auth'])->prefix('pendaftaran')->group(function () {
     Route::get('/', [App\Http\Controllers\PendaftarController::class, 'form']);
@@ -71,6 +91,7 @@ Route::middleware(['auth'])->prefix('pendaftaran')->group(function () {
     Route::get('/pembayaran', [App\Http\Controllers\PendaftarController::class, 'pembayaran']);
     Route::post('/pembayaran', [App\Http\Controllers\PendaftarController::class, 'storePembayaran']);
     Route::get('/status', [App\Http\Controllers\PendaftarController::class, 'status']);
+    Route::get('/cetak-kartu', [App\Http\Controllers\PendaftarController::class, 'cetakKartu']);
     Route::post('/auto-save', [App\Http\Controllers\PendaftarController::class, 'autoSave']);
 });
 
@@ -78,50 +99,51 @@ Route::middleware(['auth'])->prefix('pendaftaran')->group(function () {
 Route::middleware(['auth'])->prefix('admin')->group(function () {
     
     // Jurusan routes
-    Route::get('/jurusan/create', [App\Http\Controllers\AdminController::class, 'createJurusan']);
-    Route::post('/jurusan', [App\Http\Controllers\AdminController::class, 'storeJurusan']);
-    Route::get('/jurusan/{id}/edit', [App\Http\Controllers\AdminController::class, 'editJurusan']);
-    Route::put('/jurusan/{id}', [App\Http\Controllers\AdminController::class, 'updateJurusan']);
-    Route::delete('/jurusan/{id}', [App\Http\Controllers\AdminController::class, 'deleteJurusan']);
+    Route::get('/jurusan/create', [App\Http\Controllers\Admin\AdminController::class, 'createJurusan']);
+    Route::post('/jurusan', [App\Http\Controllers\Admin\AdminController::class, 'storeJurusan']);
+    Route::get('/jurusan/{id}/edit', [App\Http\Controllers\Admin\AdminController::class, 'editJurusan']);
+    Route::put('/jurusan/{id}', [App\Http\Controllers\Admin\AdminController::class, 'updateJurusan']);
+    Route::delete('/jurusan/{id}', [App\Http\Controllers\Admin\AdminController::class, 'deleteJurusan']);
     
     // Gelombang routes
-    Route::get('/gelombang/create', [App\Http\Controllers\AdminController::class, 'createGelombang']);
-    Route::post('/gelombang', [App\Http\Controllers\AdminController::class, 'storeGelombang']);
-    Route::get('/gelombang/{id}/edit', [App\Http\Controllers\AdminController::class, 'editGelombang']);
-    Route::put('/gelombang/{id}', [App\Http\Controllers\AdminController::class, 'updateGelombang']);
-    Route::delete('/gelombang/{id}', [App\Http\Controllers\AdminController::class, 'deleteGelombang']);
+    Route::get('/gelombang/create', [App\Http\Controllers\Admin\AdminController::class, 'createGelombang']);
+    Route::post('/gelombang', [App\Http\Controllers\Admin\AdminController::class, 'storeGelombang']);
+    Route::get('/gelombang/{id}/edit', [App\Http\Controllers\Admin\AdminController::class, 'editGelombang']);
+    Route::put('/gelombang/{id}', [App\Http\Controllers\Admin\AdminController::class, 'updateGelombang']);
+    Route::delete('/gelombang/{id}', [App\Http\Controllers\Admin\AdminController::class, 'deleteGelombang']);
+    Route::post('/gelombang/{id}/activate', [App\Http\Controllers\Admin\AdminController::class, 'activateGelombang']);
+    Route::post('/gelombang/{id}/deactivate', [App\Http\Controllers\Admin\AdminController::class, 'deactivateGelombang']);
     
     // User/Akun routes
-    Route::post('/akun', [App\Http\Controllers\AdminController::class, 'storeUser']);
-    Route::put('/akun/{id}', [App\Http\Controllers\AdminController::class, 'updateUser']);
-    Route::delete('/akun/{id}', [App\Http\Controllers\AdminController::class, 'deleteUser']);
-    Route::post('/akun/{id}/reset-password', [App\Http\Controllers\AdminController::class, 'resetPassword']);
+    Route::post('/akun', [App\Http\Controllers\Admin\AkunController::class, 'store']);
+    Route::put('/akun/{id}', [App\Http\Controllers\Admin\AkunController::class, 'update']);
+    Route::delete('/akun/{id}', [App\Http\Controllers\Admin\AkunController::class, 'destroy']);
+    Route::put('/akun/{id}/password', [App\Http\Controllers\Admin\AkunController::class, 'changePassword']);
     
     // Wilayah routes
-    Route::post('/wilayah', [App\Http\Controllers\AdminController::class, 'storeWilayah']);
-    Route::put('/wilayah/{id}', [App\Http\Controllers\AdminController::class, 'updateWilayah']);
-    Route::delete('/wilayah/{id}', [App\Http\Controllers\AdminController::class, 'deleteWilayah']);
+    Route::post('/wilayah', [App\Http\Controllers\Admin\AdminController::class, 'storeWilayah']);
+    Route::put('/wilayah/{id}', [App\Http\Controllers\Admin\AdminController::class, 'updateWilayah']);
+    Route::delete('/wilayah/{id}', [App\Http\Controllers\Admin\AdminController::class, 'deleteWilayah']);
 });
 
-// Region API Routes
-Route::prefix('api/regions')->group(function () {
-    Route::get('/provinces', function() {
-        return App\Models\Province::orderBy('name')->get();
-    });
-    Route::get('/regencies/{province_id}', function($province_id) {
-        return App\Models\Regency::where('province_id', $province_id)->orderBy('name')->get();
-    });
-    Route::get('/districts/{regency_id}', function($regency_id) {
-        return App\Models\District::where('regency_id', $regency_id)->orderBy('name')->get();
-    });
-    Route::get('/villages/{district_id}', function($district_id) {
-        return App\Models\Village::where('district_id', $district_id)->orderBy('name')->get();
-    });
-});
+// API Routes
+Route::post('/api/cek-status', [App\Http\Controllers\Api\StatusController::class, 'cekStatus']);
 
 // OTP Routes
 Route::get('/otp-login', function() { return view('auth.otp-login'); });
 Route::post('/send-otp', [App\Http\Controllers\OtpController::class, 'sendOtp']);
 Route::post('/verify-otp', [App\Http\Controllers\OtpController::class, 'verifyOtp']);
+Route::post('/verify-registration-otp', [App\Http\Controllers\OtpController::class, 'verifyRegistrationOtp']);
+
+// Registration OTP Routes
+Route::get('/register/otp', [App\Http\Controllers\Auth\RegisteredUserController::class, 'showOtpForm']);
+Route::post('/register/complete', [App\Http\Controllers\Auth\RegisteredUserController::class, 'completeRegistration']);
+
+// Notification Routes
+Route::middleware(['auth'])->group(function () {
+    Route::post('/notifications/{id}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+    Route::get('/notifications/count', [App\Http\Controllers\NotificationController::class, 'getUnreadCount']);
+});
 
 require __DIR__.'/auth.php';

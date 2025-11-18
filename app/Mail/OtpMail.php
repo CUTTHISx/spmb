@@ -10,22 +10,17 @@ class OtpMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $otp;
-    public $userName;
+    public $data;
 
-    public function __construct($otp, $userName)
+    public function __construct($data)
     {
-        $this->otp = $otp;
-        $this->userName = $userName;
+        $this->data = $data;
     }
 
     public function build()
     {
-        return $this->subject('Kode OTP - PPDB Online')
+        return $this->subject('OTP Login Request - PPDB Online')
                     ->view('emails.otp')
-                    ->with([
-                        'otp' => $this->otp,
-                        'userName' => $this->userName
-                    ]);
+                    ->with($this->data);
     }
 }
