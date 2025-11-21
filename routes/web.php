@@ -28,7 +28,7 @@ Route::middleware(['auth'])->prefix('dashboard')->group(function () {
 });
 
 // Admin Routes
-Route::middleware(['auth'])->prefix('admin')->group(function () {
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/master', [App\Http\Controllers\Admin\AdminController::class, 'masterData']);
     Route::get('/monitoring', [App\Http\Controllers\Admin\MonitoringController::class, 'index']);
     Route::get('/monitoring/{id}', [App\Http\Controllers\Admin\MonitoringController::class, 'detail']);
@@ -42,9 +42,8 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     
     // Keputusan Routes
     Route::get('/keputusan', [App\Http\Controllers\Admin\KeputusanController::class, 'index'])->name('admin.keputusan.index');
+    Route::get('/keputusan/{id}', [App\Http\Controllers\Admin\KeputusanController::class, 'detail'])->name('admin.keputusan.detail');
     Route::post('/keputusan', [App\Http\Controllers\Admin\KeputusanController::class, 'store'])->name('admin.keputusan.store');
-    
-
     
     // API Routes for real-time data
     Route::prefix('api')->group(function () {
@@ -52,51 +51,7 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
         Route::get('/daily-chart', [App\Http\Controllers\Admin\AdminController::class, 'getDailyChart']);
         Route::get('/jurusan-stats', [App\Http\Controllers\Admin\AdminController::class, 'getJurusanStats']);
         Route::get('/sebaran-data', [App\Http\Controllers\Admin\PetaController::class, 'getSebaranData']);
-        Route::get('/map-update', [App\Http\Controllers\Admin\PetaController::class, 'getMapUpdate']);
-        Route::get('/laporan-data', [App\Http\Controllers\Admin\LaporanController::class, 'laporanData']);
     });
-});
-
-// Verifikator Routes
-Route::middleware(['auth'])->prefix('verifikator')->group(function () {
-    Route::get('/verifikasi', [App\Http\Controllers\VerifikatorController::class, 'verifikasi']);
-    Route::get('/detail/{id}', [App\Http\Controllers\VerifikatorController::class, 'detail']);
-    Route::post('/verifikasi/{id}', [App\Http\Controllers\VerifikatorController::class, 'updateVerifikasi']);
-});
-
-// Keuangan Routes
-Route::middleware(['auth'])->prefix('keuangan')->group(function () {
-    Route::get('/verifikasi', [App\Http\Controllers\KeuanganController::class, 'verifikasi']);
-    Route::post('/payment/{id}', [App\Http\Controllers\KeuanganController::class, 'updatePaymentStatus']);
-    Route::get('/payment-proof/{id}', [App\Http\Controllers\KeuanganController::class, 'getPaymentProof']);
-    Route::get('/rekap', [App\Http\Controllers\Keuangan\RekapController::class, 'index']);
-    Route::get('/export/excel', [App\Http\Controllers\Keuangan\RekapController::class, 'exportExcel']);
-    Route::get('/export/pdf', [App\Http\Controllers\Keuangan\RekapController::class, 'exportPDF']);
-});
-
-// Pendaftar Routes
-Route::middleware(['auth'])->prefix('pendaftar')->group(function () {
-    Route::get('/form', [App\Http\Controllers\PendaftarController::class, 'form']);
-    Route::post('/store', [App\Http\Controllers\PendaftarController::class, 'store']);
-    Route::put('/update', [App\Http\Controllers\PendaftarController::class, 'update']);
-});
-
-
-
-// Pendaftaran Routes (for form views)
-Route::middleware(['auth'])->prefix('pendaftaran')->group(function () {
-    Route::get('/', [App\Http\Controllers\PendaftarController::class, 'form']);
-    Route::post('/store', [App\Http\Controllers\PendaftarController::class, 'store']);
-    Route::get('/berkas', [App\Http\Controllers\PendaftarController::class, 'berkas']);
-    Route::get('/pembayaran', [App\Http\Controllers\PendaftarController::class, 'pembayaran']);
-    Route::post('/pembayaran', [App\Http\Controllers\PendaftarController::class, 'storePembayaran']);
-    Route::get('/status', [App\Http\Controllers\PendaftarController::class, 'status']);
-    Route::get('/cetak-kartu', [App\Http\Controllers\PendaftarController::class, 'cetakKartu']);
-    Route::post('/auto-save', [App\Http\Controllers\PendaftarController::class, 'autoSave']);
-});
-
-// Continue Admin Routes
-Route::middleware(['auth'])->prefix('admin')->group(function () {
     
     // Jurusan routes
     Route::get('/jurusan/create', [App\Http\Controllers\Admin\AdminController::class, 'createJurusan']);
@@ -126,6 +81,46 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
     Route::delete('/wilayah/{id}', [App\Http\Controllers\Admin\AdminController::class, 'deleteWilayah']);
 });
 
+// Verifikator Routes
+Route::middleware(['auth', 'role:verifikator_adm'])->prefix('verifikator')->group(function () {
+    Route::get('/verifikasi', [App\Http\Controllers\VerifikatorController::class, 'verifikasi']);
+    Route::get('/detail/{id}', [App\Http\Controllers\VerifikatorController::class, 'detail']);
+    Route::post('/verifikasi/{id}', [App\Http\Controllers\VerifikatorController::class, 'updateVerifikasi']);
+});
+
+// Keuangan Routes
+Route::middleware(['auth', 'role:keuangan'])->prefix('keuangan')->group(function () {
+    Route::get('/verifikasi', [App\Http\Controllers\KeuanganController::class, 'verifikasi']);
+    Route::post('/payment/{id}', [App\Http\Controllers\KeuanganController::class, 'updatePaymentStatus']);
+    Route::get('/payment-proof/{id}', [App\Http\Controllers\KeuanganController::class, 'getPaymentProof']);
+    Route::get('/rekap', [App\Http\Controllers\Keuangan\RekapController::class, 'index']);
+    Route::get('/export/excel', [App\Http\Controllers\Keuangan\RekapController::class, 'exportExcel']);
+    Route::get('/export/pdf', [App\Http\Controllers\Keuangan\RekapController::class, 'exportPDF']);
+});
+
+// Pendaftar Routes
+Route::middleware(['auth'])->prefix('pendaftar')->group(function () {
+    Route::get('/form', [App\Http\Controllers\PendaftarController::class, 'form']);
+    Route::post('/store', [App\Http\Controllers\PendaftarController::class, 'store']);
+    Route::put('/update', [App\Http\Controllers\PendaftarController::class, 'update']);
+});
+
+// Pendaftaran Routes (for form views)
+Route::middleware(['auth'])->prefix('pendaftaran')->group(function () {
+    Route::get('/', [App\Http\Controllers\PendaftarController::class, 'form']);
+    Route::get('/test', function() { return view('test-form'); });
+    Route::post('/store', [App\Http\Controllers\PendaftarController::class, 'store']);
+    Route::post('/submit', [App\Http\Controllers\PendaftarController::class, 'submitPendaftaran']);
+    Route::get('/berkas', [App\Http\Controllers\PendaftarController::class, 'berkas']);
+    Route::post('/berkas', [App\Http\Controllers\PendaftarController::class, 'storeUpload']);
+    Route::get('/pembayaran', [App\Http\Controllers\PendaftarController::class, 'pembayaran']);
+    Route::post('/pembayaran', [App\Http\Controllers\PendaftarController::class, 'storePembayaran']);
+    Route::get('/status', [App\Http\Controllers\PendaftarController::class, 'status']);
+    Route::get('/cetak-kartu', [App\Http\Controllers\PendaftarController::class, 'cetakKartu']);
+    Route::get('/formulir', [App\Http\Controllers\PendaftarController::class, 'formulir']);
+    Route::post('/auto-save', [App\Http\Controllers\PendaftarController::class, 'autoSave']);
+});
+
 // API Routes
 Route::post('/api/cek-status', [App\Http\Controllers\Api\StatusController::class, 'cekStatus']);
 
@@ -138,12 +133,5 @@ Route::post('/verify-registration-otp', [App\Http\Controllers\OtpController::cla
 // Registration OTP Routes
 Route::get('/register/otp', [App\Http\Controllers\Auth\RegisteredUserController::class, 'showOtpForm']);
 Route::post('/register/complete', [App\Http\Controllers\Auth\RegisteredUserController::class, 'completeRegistration']);
-
-// Notification Routes
-Route::middleware(['auth'])->group(function () {
-    Route::post('/notifications/{id}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead']);
-    Route::post('/notifications/mark-all-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
-    Route::get('/notifications/count', [App\Http\Controllers\NotificationController::class, 'getUnreadCount']);
-});
 
 require __DIR__.'/auth.php';

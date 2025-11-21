@@ -19,6 +19,13 @@ class KeuanganController extends Controller
         // Total pemasukan dari pembayaran terverifikasi
         $totalPemasukan = PendaftarPembayaran::where('status_verifikasi', 'VERIFIED')->sum('nominal');
         
+        // Debug: Hitung total semua pembayaran untuk perbandingan
+        $totalSemuaPembayaran = PendaftarPembayaran::sum('nominal');
+        $jumlahVerified = PendaftarPembayaran::where('status_verifikasi', 'VERIFIED')->count();
+        $jumlahPending = PendaftarPembayaran::where('status_verifikasi', 'PENDING')->count();
+        
+        \Log::info('Dashboard Keuangan - Total Verified: ' . $totalPemasukan . ' dari ' . $jumlahVerified . ' pembayaran. Pending: ' . $jumlahPending);
+        
         // Recent payments for table
         $recentPayments = Pendaftar::with(['user', 'dataSiswa', 'pembayaran'])
             ->whereHas('pembayaran')
@@ -62,7 +69,7 @@ class KeuanganController extends Controller
             $pendaftar = Pendaftar::findOrFail($id);
             
             // Update status di tabel pembayaran dengan nilai yang sesuai
-            if ($pendaftar->pembayaran) {
+            if ($pendaftar && $pendaftar->pembayaran) {
                 $pembayaranStatus = $request->status == 'LUNAS' ? 'VERIFIED' : 'REJECTED';
                 $pendaftar->pembayaran->update([
                     'status_verifikasi' => $pembayaranStatus,
@@ -86,7 +93,7 @@ class KeuanganController extends Controller
                     'ip_address' => request()->ip()
                 ]);
             } catch (\Exception $e) {
-                // Log error but don't fail the verification
+                \Log::warning('Failed to log activity: ' . $e->getMessage());
             }
             
             return response()->json(['success' => true, 'message' => 'Verifikasi pembayaran berhasil disimpan']);
@@ -99,7 +106,7 @@ class KeuanganController extends Controller
     {
         $pendaftar = Pendaftar::with('pembayaran')->findOrFail($id);
         
-        if ($pendaftar->pembayaran && $pendaftar->pembayaran->bukti_pembayaran) {
+        if ($pendaftar && $pendaftar->pembayaran && $pendaftar->pembayaran->bukti_pembayaran) {
             // Remove 'uploads/' prefix if it exists in the stored path
             $filePath = str_replace('uploads/', '', $pendaftar->pembayaran->bukti_pembayaran);
             $buktiUrl = asset('uploads/' . $filePath);

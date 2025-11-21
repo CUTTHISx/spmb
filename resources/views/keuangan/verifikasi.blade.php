@@ -94,24 +94,24 @@
                                     </td>
                                     <td class="py-3 text-center action-cell">
                                         @if($p->pembayaran && $p->pembayaran->status_verifikasi == 'VERIFIED')
-                                            <span class="badge bg-success-light text-success">
+                                            <span class="badge bg-success">
                                                 <i class="fas fa-check-circle me-1"></i>Selesai
                                             </span>
                                         @elseif($p->pembayaran && $p->pembayaran->status_verifikasi == 'REJECTED')
-                                            <span class="badge bg-danger-light text-danger">
+                                            <span class="badge bg-danger">
                                                 <i class="fas fa-times-circle me-1"></i>Ditolak
                                             </span>
                                         @elseif($p->pembayaran)
                                             <div class="d-flex gap-1 justify-content-center">
-                                                <span class="badge bg-success-light text-success" style="cursor: pointer;" onclick="updatePayment({{ $p->id }}, 'LUNAS')" title="Terima">
-                                                    <i class="fas fa-check me-1"></i>Terima
-                                                </span>
-                                                <span class="badge bg-danger-light text-danger" style="cursor: pointer;" onclick="updatePayment({{ $p->id }}, 'DITOLAK')" title="Tolak">
-                                                    <i class="fas fa-times me-1"></i>Tolak
-                                                </span>
-                                                <span class="badge bg-info-light text-info" style="cursor: pointer;" onclick="viewProof({{ $p->id }})" title="Lihat">
-                                                    <i class="fas fa-eye me-1"></i>Lihat
-                                                </span>
+                                                <x-action-button variant="success" icon="fas fa-check" onclick="updatePayment({{ $p->id }}, 'LUNAS')" title="Terima">
+                                                    Terima
+                                                </x-action-button>
+                                                <x-action-button variant="danger" icon="fas fa-times" onclick="updatePayment({{ $p->id }}, 'DITOLAK')" title="Tolak">
+                                                    Tolak
+                                                </x-action-button>
+                                                <x-action-button variant="info" icon="fas fa-eye" onclick="viewProof({{ $p->id }})" title="Lihat">
+                                                    Lihat
+                                                </x-action-button>
                                             </div>
                                         @else
                                             <span class="text-muted small">Belum upload bukti</span>

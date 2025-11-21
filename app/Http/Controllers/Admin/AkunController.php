@@ -11,18 +11,21 @@ class AkunController extends Controller
 {
     public function index()
     {
-        $users = Pengguna::orderBy('created_at', 'desc')->paginate(20);
+        // Lightweight pagination with selected fields only
+        $users = Pengguna::select('id', 'nama', 'email', 'role', 'created_at')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
         
+        // Stats yang benar: user accounts vs pendaftar registrations
         $stats = [
-            'totalUsers' => Pengguna::count(),
-            'adminCount' => Pengguna::where('role', 'admin')->count(),
-            'kepsekCount' => Pengguna::where('role', 'kepsek')->count(),
-            'keuanganCount' => Pengguna::where('role', 'keuangan')->count(),
-            'verifikatorCount' => Pengguna::where('role', 'verifikator_adm')->count(),
-            'pendaftarCount' => Pengguna::where('role', 'pendaftar')->count(),
+            'total_users' => Pengguna::count(),
+            'admin' => Pengguna::where('role', 'admin')->count(),
+            'verifikator' => Pengguna::where('role', 'verifikator_adm')->count(),
+            'keuangan' => Pengguna::where('role', 'keuangan')->count(),
+            'total_pendaftar' => \App\Models\Pendaftar::count(),
         ];
         
-        return view('admin.akun', array_merge(compact('users'), $stats));
+        return view('admin.akun', compact('users', 'stats'));
     }
     
     public function store(Request $request)

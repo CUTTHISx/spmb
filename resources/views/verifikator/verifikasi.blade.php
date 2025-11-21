@@ -153,9 +153,21 @@
                                         @endswitch
                                     </td>
                                     <td class="py-3 text-center action-cell">
-                                        <a href="/verifikator/detail/{{ $p->id }}" class="badge bg-info-light text-info" style="cursor: pointer;" title="Detail">
-                                            <i class="fas fa-eye me-1"></i>Detail
-                                        </a>
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <a href="/verifikator/detail/{{ $p->id }}" class="btn btn-sm btn-outline-info" title="Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            @if(($p->status_berkas == 'PENDING' || $p->status_berkas == 'REVISION') && $p->berkas && $p->berkas->count() > 0)
+                                            <button class="btn btn-sm btn-outline-primary" onclick="showVerificationModal({{ $p->id }}, 'berkas', 'VERIFIED')" title="Verifikasi Berkas">
+                                                <i class="fas fa-file-check"></i>
+                                            </button>
+                                            @endif
+                                            @if(($p->status_data == 'PENDING' || $p->status_data == 'REVISION') && ($p->dataSiswa || $p->dataOrtu || $p->asalSekolah))
+                                            <button class="btn btn-sm btn-outline-success" onclick="showVerificationModal({{ $p->id }}, 'data', 'VERIFIED')" title="Verifikasi Data">
+                                                <i class="fas fa-user-check"></i>
+                                            </button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                                 @empty
@@ -190,7 +202,33 @@
                     <input type="hidden" id="verificationStatus">
                     
                     <div class="mb-3">
+                        <label class="form-label">Jenis Verifikasi</label>
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="setVerificationType('berkas')">
+                                <i class="fas fa-file me-1"></i>Berkas
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="setVerificationType('data')">
+                                <i class="fas fa-user me-1"></i>Data
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm" onclick="setVerificationType('both')">
+                                <i class="fas fa-check-double me-1"></i>Keduanya
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
                         <label class="form-label">Status Verifikasi</label>
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="setVerificationStatus('VERIFIED')">
+                                <i class="fas fa-check me-1"></i>Lulus
+                            </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="setVerificationStatus('REVISION')">
+                                <i class="fas fa-edit me-1"></i>Perbaikan
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="setVerificationStatus('REJECTED')">
+                                <i class="fas fa-times me-1"></i>Tolak
+                            </button>
+                        </div>
                         <div id="statusDisplay" class="form-control-plaintext"></div>
                     </div>
                     
@@ -210,20 +248,76 @@
 </div>
 
 <script>
-function showVerificationModal(id, type, status) {
+let currentPendaftarId = null;
+let currentType = null;
+let currentStatus = null;
+
+function showVerificationModal(id, type = null, status = null) {
+    currentPendaftarId = id;
+    currentType = type;
+    currentStatus = status;
+    
     document.getElementById('pendaftarId').value = id;
-    document.getElementById('verificationType').value = type;
-    document.getElementById('verificationStatus').value = status;
+    document.getElementById('verificationType').value = type || '';
+    document.getElementById('verificationStatus').value = status || '';
     
-    const typeText = type === 'berkas' ? 'Berkas' : 'Data';
-    const statusText = status === 'VERIFIED' ? 'Lulus' : (status === 'REVISION' ? 'Perbaikan' : 'Tolak');
-    const statusClass = status === 'VERIFIED' ? 'success' : (status === 'REVISION' ? 'warning' : 'danger');
-    
-    document.getElementById('modalType').textContent = typeText;
-    document.getElementById('statusDisplay').innerHTML = `<span class="badge bg-${statusClass}">${statusText}</span>`;
+    // Reset form
     document.getElementById('catatan').value = '';
+    updateModalDisplay();
     
     new bootstrap.Modal(document.getElementById('verificationModal')).show();
+}
+
+function setVerificationType(type) {
+    currentType = type;
+    document.getElementById('verificationType').value = type;
+    updateModalDisplay();
+    
+    // Update button states
+    document.querySelectorAll('#verificationModal .btn-outline-primary, #verificationModal .btn-outline-success, #verificationModal .btn-outline-info').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (type === 'berkas') {
+        document.querySelector('#verificationModal .btn-outline-primary').classList.add('active');
+    } else if (type === 'data') {
+        document.querySelector('#verificationModal .btn-outline-success').classList.add('active');
+    } else if (type === 'both') {
+        document.querySelector('#verificationModal .btn-outline-info').classList.add('active');
+    }
+}
+
+function setVerificationStatus(status) {
+    currentStatus = status;
+    document.getElementById('verificationStatus').value = status;
+    updateModalDisplay();
+    
+    // Update button states
+    document.querySelectorAll('#verificationModal .btn-outline-success, #verificationModal .btn-outline-warning, #verificationModal .btn-outline-danger').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (status === 'VERIFIED') {
+        document.querySelector('#verificationModal .btn-outline-success').classList.add('active');
+    } else if (status === 'REVISION') {
+        document.querySelector('#verificationModal .btn-outline-warning').classList.add('active');
+    } else if (status === 'REJECTED') {
+        document.querySelector('#verificationModal .btn-outline-danger').classList.add('active');
+    }
+}
+
+function updateModalDisplay() {
+    const typeText = currentType === 'berkas' ? 'Berkas' : (currentType === 'data' ? 'Data' : (currentType === 'both' ? 'Berkas & Data' : ''));
+    const statusText = currentStatus === 'VERIFIED' ? 'Lulus' : (currentStatus === 'REVISION' ? 'Perbaikan' : (currentStatus === 'REJECTED' ? 'Tolak' : ''));
+    const statusClass = currentStatus === 'VERIFIED' ? 'success' : (currentStatus === 'REVISION' ? 'warning' : (currentStatus === 'REJECTED' ? 'danger' : 'secondary'));
+    
+    document.getElementById('modalType').textContent = typeText;
+    
+    if (statusText) {
+        document.getElementById('statusDisplay').innerHTML = `<span class="badge bg-${statusClass}">${statusText}</span>`;
+    } else {
+        document.getElementById('statusDisplay').innerHTML = '<span class="text-muted">Pilih status verifikasi</span>';
+    }
 }
 
 function submitVerification() {
@@ -232,33 +326,71 @@ function submitVerification() {
     const status = document.getElementById('verificationStatus').value;
     const catatan = document.getElementById('catatan').value;
     
-    if (!catatan.trim()) {
-        alert('Catatan harus diisi!');
+    if (!type) {
+        alert('Pilih jenis verifikasi!');
         return;
     }
     
-    const endpoint = type === 'berkas' ? `/verifikator/berkas/${id}` : `/verifikator/data/${id}`;
+    if (!status) {
+        alert('Pilih status verifikasi!');
+        return;
+    }
     
-    fetch(endpoint, {
+    if (!catatan.trim() || catatan.trim().length < 5) {
+        alert('Catatan harus diisi minimal 5 karakter!');
+        return;
+    }
+    
+    const submitBtn = document.querySelector('#verificationModal .btn-primary');
+    
+    // Disable button during request
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Menyimpan...';
+    
+    fetch(`/verifikator/verifikasi/${id}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
         },
-        body: JSON.stringify({ status: status, catatan: catatan })
+        body: JSON.stringify({ 
+            jenis: type,
+            status: status, 
+            catatan: catatan.trim() 
+        })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || `HTTP ${response.status}: ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
+            alert('Verifikasi berhasil disimpan!');
             bootstrap.Modal.getInstance(document.getElementById('verificationModal')).hide();
             location.reload();
         } else {
-            alert('Error: ' + data.message);
+            throw new Error(data.message || 'Terjadi kesalahan tidak diketahui');
         }
     })
     .catch(error => {
+        console.error('Verification error:', error);
         alert('Error: ' + error.message);
+    })
+    .finally(() => {
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Simpan Verifikasi';
     });
 }
+
+// Refresh functionality
+document.querySelector('.btn-outline-secondary').addEventListener('click', function() {
+    location.reload();
+});
 </script>
 @endsection

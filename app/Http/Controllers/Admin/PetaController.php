@@ -10,29 +10,19 @@ class PetaController extends Controller
 {
     public function index()
     {
-        $pendaftar = Pendaftar::with(['dataSiswa', 'jurusan'])->get();
-            
-        // Simulate geographical distribution if no real data
-        $sebaranKecamatan = collect([
-            (object)['kecamatan' => 'Kota', 'total' => Pendaftar::count() * 0.3],
-            (object)['kecamatan' => 'Utara', 'total' => Pendaftar::count() * 0.2],
-            (object)['kecamatan' => 'Selatan', 'total' => Pendaftar::count() * 0.2],
-            (object)['kecamatan' => 'Timur', 'total' => Pendaftar::count() * 0.15],
-            (object)['kecamatan' => 'Barat', 'total' => Pendaftar::count() * 0.15],
-        ]);
+        // Lightweight data for map view
+        $totalPendaftar = Pendaftar::count();
         
-        // Try to get real data if available
-        $realData = Pendaftar::join('pendaftar_data_siswa', 'pendaftar.id', '=', 'pendaftar_data_siswa.pendaftar_id')
-            ->selectRaw('kecamatan, count(*) as total')
-            ->whereNotNull('kecamatan')
-            ->groupBy('kecamatan')
-            ->get();
+        // Simple geographical distribution
+        $sebaranKecamatan = collect([
+            (object)['kecamatan' => 'Kota', 'total' => (int)($totalPendaftar * 0.3)],
+            (object)['kecamatan' => 'Utara', 'total' => (int)($totalPendaftar * 0.2)],
+            (object)['kecamatan' => 'Selatan', 'total' => (int)($totalPendaftar * 0.2)],
+            (object)['kecamatan' => 'Timur', 'total' => (int)($totalPendaftar * 0.15)],
+            (object)['kecamatan' => 'Barat', 'total' => (int)($totalPendaftar * 0.15)],
+        ]);
             
-        if ($realData->isNotEmpty()) {
-            $sebaranKecamatan = $realData;
-        }
-            
-        return view('admin.peta', compact('pendaftar', 'sebaranKecamatan'));
+        return view('admin.peta', compact('totalPendaftar', 'sebaranKecamatan'));
     }
     
     public function getSebaranData()

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.main')
 
 @section('title', 'Upload Berkas - PPDB Online')
 
@@ -9,25 +9,74 @@
         <p class="text-gray-600">Upload dokumen pendukung pendaftaran</p>
     </div>
 
+    @if($errors->any())
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-circle text-red-500"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">Terjadi Kesalahan</h3>
+                    <ul class="mt-2 text-sm text-red-700 list-disc list-inside">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($pendaftar && ($pendaftar->status_berkas == 'REJECTED' || $pendaftar->status_berkas == 'REVISION'))
+        <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-circle text-red-500"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800">Berkas Perlu Diperbaiki</h3>
+                    <div class="mt-2 text-sm text-red-700">
+                        <p><strong>Catatan Verifikator:</strong></p>
+                        <p>{{ $pendaftar->catatan_berkas ?? $pendaftar->catatan_verifikasi ?? 'Silakan upload ulang berkas yang sesuai' }}</p>
+                    </div>
+                    <p class="mt-2 text-sm text-red-600">Silakan upload ulang berkas yang diminta di bawah ini.</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    @if($pendaftar && $pendaftar->status_berkas == 'VERIFIED')
+        <div class="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-check-circle text-green-500"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-green-800">Berkas Sudah Terverifikasi</h3>
+                    <p class="mt-1 text-sm text-green-700">Semua berkas Anda sudah diverifikasi dan disetujui.</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <form action="/pendaftaran/berkas" method="POST" enctype="multipart/form-data" class="space-y-6">
         @csrf
         
         <!-- Ijazah -->
         <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-semibold mb-4">Ijazah/SKHUN</h3>
+            <h3 class="text-lg font-semibold mb-4">Ijazah/SKHUN <span class="text-red-500">*</span></h3>
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <input type="file" name="ijazah" accept="image/*,.pdf" class="hidden" id="ijazah">
-                <label for="ijazah" class="cursor-pointer block text-center">
-                    @if($pendaftar->berkas?->ijazah)
-                        <i class="fas fa-file-check text-4xl text-green-500 mb-2"></i>
-                        <p class="text-green-600 font-semibold">File sudah diupload</p>
-                        <a href="{{ $pendaftar->berkas->ijazah_url }}" target="_blank" class="text-blue-600 hover:underline">Lihat File</a>
-                    @else
-                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
-                        <p class="text-gray-600">Klik untuk upload Ijazah/SKHUN</p>
-                    @endif
-                    <p class="text-sm text-gray-500 mt-1">Format: JPG, PNG, PDF (Max: 2MB)</p>
-                </label>
+                <input type="file" name="ijazah" accept="image/*,.pdf" class="w-full p-2 border rounded" id="ijazah">
+                @if(isset($existingFiles['ijazah']))
+                    <div class="mt-3 p-3 bg-green-50 rounded">
+                        <p class="text-green-600 font-semibold mb-2"><i class="fas fa-check-circle"></i> File sudah diupload</p>
+                        <a href="{{ asset($existingFiles['ijazah']->url) }}" target="_blank" class="text-blue-600 hover:underline">
+                            <i class="fas fa-eye"></i> Lihat File
+                        </a>
+                        <p class="text-sm text-gray-600 mt-1">Upload file baru untuk mengganti</p>
+                    </div>
+                @endif
+                <p class="text-sm text-gray-500 mt-2">Format: JPG, PNG, PDF (Max: 2MB)</p>
             </div>
         </div>
 
@@ -35,74 +84,69 @@
         <div class="bg-white rounded-lg shadow-sm p-6">
             <h3 class="text-lg font-semibold mb-4">Rapor Semester Terakhir</h3>
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <input type="file" name="rapor" accept="image/*,.pdf" class="hidden" id="rapor">
-                <label for="rapor" class="cursor-pointer block text-center">
-                    @if($pendaftar->berkas?->rapor)
-                        <i class="fas fa-file-check text-4xl text-green-500 mb-2"></i>
-                        <p class="text-green-600 font-semibold">File sudah diupload</p>
-                        <a href="{{ $pendaftar->berkas->rapor_url }}" target="_blank" class="text-blue-600 hover:underline">Lihat File</a>
-                    @else
-                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
-                        <p class="text-gray-600">Klik untuk upload Rapor</p>
-                    @endif
-                    <p class="text-sm text-gray-500 mt-1">Format: JPG, PNG, PDF (Max: 2MB)</p>
-                </label>
+                <input type="file" name="rapor" accept="image/*,.pdf" class="w-full p-2 border rounded" id="rapor">
+                @if(isset($existingFiles['rapor']))
+                    <div class="mt-3 p-3 bg-green-50 rounded">
+                        <p class="text-green-600 font-semibold mb-2"><i class="fas fa-check-circle"></i> File sudah diupload</p>
+                        <a href="{{ asset($existingFiles['rapor']->url) }}" target="_blank" class="text-blue-600 hover:underline">
+                            <i class="fas fa-eye"></i> Lihat File
+                        </a>
+                        <p class="text-sm text-gray-600 mt-1">Upload file baru untuk mengganti</p>
+                    </div>
+                @endif
+                <p class="text-sm text-gray-500 mt-2">Format: JPG, PNG, PDF (Max: 2MB)</p>
             </div>
         </div>
 
         <!-- KK -->
         <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-semibold mb-4">Kartu Keluarga (KK)</h3>
+            <h3 class="text-lg font-semibold mb-4">Kartu Keluarga (KK) <span class="text-red-500">*</span></h3>
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <input type="file" name="kk" accept="image/*,.pdf" class="hidden" id="kk">
-                <label for="kk" class="cursor-pointer block text-center">
-                    @if($pendaftar->berkas?->kk)
-                        <i class="fas fa-file-check text-4xl text-green-500 mb-2"></i>
-                        <p class="text-green-600 font-semibold">File sudah diupload</p>
-                        <a href="{{ $pendaftar->berkas->kk_url }}" target="_blank" class="text-blue-600 hover:underline">Lihat File</a>
-                    @else
-                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
-                        <p class="text-gray-600">Klik untuk upload KK</p>
-                    @endif
-                    <p class="text-sm text-gray-500 mt-1">Format: JPG, PNG, PDF (Max: 2MB)</p>
-                </label>
+                <input type="file" name="kk" accept="image/*,.pdf" class="w-full p-2 border rounded" id="kk">
+                @if(isset($existingFiles['kk']))
+                    <div class="mt-3 p-3 bg-green-50 rounded">
+                        <p class="text-green-600 font-semibold mb-2"><i class="fas fa-check-circle"></i> File sudah diupload</p>
+                        <a href="{{ asset($existingFiles['kk']->url) }}" target="_blank" class="text-blue-600 hover:underline">
+                            <i class="fas fa-eye"></i> Lihat File
+                        </a>
+                        <p class="text-sm text-gray-600 mt-1">Upload file baru untuk mengganti</p>
+                    </div>
+                @endif
+                <p class="text-sm text-gray-500 mt-2">Format: JPG, PNG, PDF (Max: 2MB)</p>
             </div>
         </div>
 
         <!-- Akta -->
         <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-semibold mb-4">Akta Kelahiran</h3>
+            <h3 class="text-lg font-semibold mb-4">Akta Kelahiran <span class="text-red-500">*</span></h3>
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <input type="file" name="akta" accept="image/*,.pdf" class="hidden" id="akta">
-                <label for="akta" class="cursor-pointer block text-center">
-                    @if($pendaftar->berkas?->akta)
-                        <i class="fas fa-file-check text-4xl text-green-500 mb-2"></i>
-                        <p class="text-green-600 font-semibold">File sudah diupload</p>
-                        <a href="{{ $pendaftar->berkas->akta_url }}" target="_blank" class="text-blue-600 hover:underline">Lihat File</a>
-                    @else
-                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
-                        <p class="text-gray-600">Klik untuk upload Akta Kelahiran</p>
-                    @endif
-                    <p class="text-sm text-gray-500 mt-1">Format: JPG, PNG, PDF (Max: 2MB)</p>
-                </label>
+                <input type="file" name="akta" accept="image/*,.pdf" class="w-full p-2 border rounded" id="akta">
+                @if(isset($existingFiles['akta']))
+                    <div class="mt-3 p-3 bg-green-50 rounded">
+                        <p class="text-green-600 font-semibold mb-2"><i class="fas fa-check-circle"></i> File sudah diupload</p>
+                        <a href="{{ asset($existingFiles['akta']->url) }}" target="_blank" class="text-blue-600 hover:underline">
+                            <i class="fas fa-eye"></i> Lihat File
+                        </a>
+                        <p class="text-sm text-gray-600 mt-1">Upload file baru untuk mengganti</p>
+                    </div>
+                @endif
+                <p class="text-sm text-gray-500 mt-2">Format: JPG, PNG, PDF (Max: 2MB)</p>
             </div>
         </div>
 
         <!-- Foto -->
         <div class="bg-white rounded-lg shadow-sm p-6">
-            <h3 class="text-lg font-semibold mb-4">Pas Foto 3x4</h3>
+            <h3 class="text-lg font-semibold mb-4">Pas Foto 3x4 <span class="text-red-500">*</span></h3>
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                <input type="file" name="foto" accept="image/*" class="hidden" id="foto">
-                <label for="foto" class="cursor-pointer block text-center">
-                    @if($pendaftar->berkas?->foto)
-                        <img src="{{ $pendaftar->berkas->foto_url }}" alt="Foto" class="w-24 h-32 object-cover mx-auto mb-2 border">
-                        <p class="text-green-600 font-semibold">Foto sudah diupload</p>
-                    @else
-                        <i class="fas fa-camera text-4xl text-gray-400 mb-2"></i>
-                        <p class="text-gray-600">Klik untuk upload Pas Foto</p>
-                    @endif
-                    <p class="text-sm text-gray-500 mt-1">Format: JPG, PNG (Max: 1MB)</p>
-                </label>
+                <input type="file" name="foto" accept="image/*" class="w-full p-2 border rounded" id="foto">
+                @if(isset($existingFiles['lainnya']))
+                    <div class="mt-3 p-3 bg-green-50 rounded text-center">
+                        <img src="{{ asset($existingFiles['lainnya']->url) }}" alt="Foto" class="w-24 h-32 object-cover mx-auto mb-2 border">
+                        <p class="text-green-600 font-semibold mb-2"><i class="fas fa-check-circle"></i> Foto sudah diupload</p>
+                        <p class="text-sm text-gray-600">Upload file baru untuk mengganti</p>
+                    </div>
+                @endif
+                <p class="text-sm text-gray-500 mt-2">Format: JPG, PNG (Max: 1MB)</p>
             </div>
         </div>
 

@@ -88,15 +88,20 @@
         </div>
     </div>
 
-    <!-- Ringkasan Harian -->
+    <!-- Ringkasan per Jurusan -->
     <div class="row g-4 mb-4">
         <div class="col-12">
             <div class="card system-status-card">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-calendar-day text-primary me-2"></i>
-                        Ringkasan Harian - {{ date('d M Y') }}
-                    </h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="fas fa-graduation-cap text-primary me-2"></i>
+                            Ringkasan per Jurusan
+                        </h5>
+                        <a href="/admin/master" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-cog me-1"></i>Kelola Jurusan
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -105,20 +110,29 @@
                                 <tr>
                                     <th>Jurusan</th>
                                     <th>Total Pendaftar</th>
-                                    <th>Terverifikasi</th>
-                                    <th>Terbayar</th>
-                                    <th>Progress</th>
+                                    <th>Kuota</th>
+                                    <th>Sisa Kuota</th>
                                 </tr>
                             </thead>
-                            <tbody id="jurusanTableBody">
+                            <tbody>
+                                @forelse(\App\Models\Jurusan::withCount('pendaftar')->get() as $jurusan)
                                 <tr>
-                                    <td colspan="5" class="text-center">
-                                        <div class="spinner-border spinner-border-sm" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        Memuat data...
+                                    <td><strong>{{ $jurusan->nama }}</strong><br><small class="text-muted">{{ $jurusan->kode }}</small></td>
+                                    <td><span class="badge bg-primary">{{ $jurusan->pendaftar_count }}</span></td>
+                                    <td><span class="badge bg-info">{{ $jurusan->kuota }}</span></td>
+                                    <td>
+                                        @php $sisa = max(0, $jurusan->kuota - $jurusan->pendaftar_count) @endphp
+                                        <span class="badge {{ $sisa > 0 ? 'bg-success' : 'bg-danger' }}">{{ $sisa }}</span>
+                                    </td>
+
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        <i class="fas fa-info-circle me-2"></i>Belum ada data jurusan
                                     </td>
                                 </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -148,120 +162,51 @@
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{{ asset('js/layouts/dashboard.js') }}"></script>
 <script>
-let dailyChart;
-
 document.addEventListener('DOMContentLoaded', function() {
-    loadDashboardData();
-    
-    // Auto refresh every 30 seconds
-    setInterval(loadDashboardData, 30000);
-});
-
-function loadDashboardData() {
-    // Load stats
-    fetch('/admin/api/dashboard-stats')
-        .then(response => response.json())
-        .then(data => {
-            document.querySelector('.stat-card:nth-child(1) h3').textContent = data.total;
-            document.querySelector('.stat-card:nth-child(2) h3').textContent = data.verified;
-            document.querySelector('.stat-card:nth-child(3) h3').textContent = data.submitted;
-            document.querySelector('.stat-card:nth-child(4) h3').textContent = data.rejected;
-            
-            // Update percentages
-            if (data.total > 0) {
-                const verifiedPercent = Math.round((data.verified / data.total) * 100);
-                const rejectedPercent = Math.round((data.rejected / data.total) * 100);
-                document.querySelector('.stat-card:nth-child(2) .badge').textContent = verifiedPercent + '% dari total';
-                document.querySelector('.stat-card:nth-child(4) .badge').textContent = rejectedPercent + '% dari total';
-            }
-        })
-        .catch(error => console.error('Error loading stats:', error));
-    
-    // Load daily chart
-    fetch('/admin/api/daily-chart')
-        .then(response => response.json())
-        .then(data => {
-            if (dailyChart) {
-                dailyChart.destroy();
-            }
-            
-            const ctx = document.getElementById('dailyChart').getContext('2d');
-            dailyChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        label: 'Pendaftar Harian',
-                        data: data.data,
-                        borderColor: '#4361ee',
-                        backgroundColor: 'rgba(67, 97, 238, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0,0,0,0.1)'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
+    const ctx = document.getElementById('dailyChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [@foreach($dailyStats as $stat)'{{ $stat->date }}',@endforeach],
+                datasets: [{
+                    label: 'Pendaftar Harian',
+                    data: [@foreach($dailyStats as $stat){{ $stat->count }},@endforeach],
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#007bff',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            precision: 0
                         }
                     },
-                    plugins: {
-                        legend: {
+                    x: {
+                        grid: {
                             display: false
                         }
                     }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
                 }
-            });
-        })
-        .catch(error => console.error('Error loading chart:', error));
-    
-    // Load jurusan table data
-    loadJurusanTable();
-}
-
-function loadJurusanTable() {
-    fetch('/admin/api/jurusan-stats')
-        .then(response => response.json())
-        .then(data => {
-            const tbody = document.querySelector('#jurusanTableBody');
-            if (tbody) {
-                tbody.innerHTML = '';
-                
-                data.labels.forEach((jurusan, index) => {
-                    const count = data.data[index];
-                    const progress = Math.min((count / 30) * 100, 100); // Assuming max 30 per jurusan
-                    
-                    const row = `
-                        <tr>
-                            <td><span class="fw-bold">${jurusan}</span></td>
-                            <td><span class="badge bg-primary">${count}</span></td>
-                            <td><span class="badge bg-success">${Math.floor(count * 0.8)}</span></td>
-                            <td><span class="badge bg-info">${Math.floor(count * 0.6)}</span></td>
-                            <td>
-                                <div class="progress" style="height: 6px;">
-                                    <div class="progress-bar bg-success" style="width: ${progress}%"></div>
-                                </div>
-                                <small class="text-muted">${Math.round(progress)}% dari target</small>
-                            </td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += row;
-                });
             }
-        })
-        .catch(error => console.error('Error loading jurusan data:', error));
-}
+        });
+    }
+});
+</script>
 </script>
 @endsection

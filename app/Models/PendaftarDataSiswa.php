@@ -24,6 +24,13 @@ class PendaftarDataSiswa extends Model
         'lng'
     ];
     
+    protected $casts = [
+        'nik' => 'integer',
+        'nisn' => 'integer',
+        'lat' => 'decimal:7',
+        'lng' => 'decimal:7',
+    ];
+    
     public function wilayah()
     {
         return $this->belongsTo(Wilayah::class, 'wilayah_id');

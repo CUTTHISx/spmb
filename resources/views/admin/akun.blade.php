@@ -16,7 +16,7 @@
                     <div class="stat-icon bg-primary-light mb-2">
                         <i class="fas fa-users text-primary fa-2x"></i>
                     </div>
-                    <h5 class="fw-bold">{{ $totalUsers ?? 45 }}</h5>
+                    <h5 class="fw-bold">{{ $stats['total_users'] ?? 0 }}</h5>
                     <small class="text-muted">Total Akun</small>
                 </div>
             </div>
@@ -27,7 +27,7 @@
                     <div class="stat-icon bg-danger-light mb-2">
                         <i class="fas fa-user-shield text-danger fa-2x"></i>
                     </div>
-                    <h5 class="fw-bold">{{ $adminCount ?? 3 }}</h5>
+                    <h5 class="fw-bold">{{ $stats['admin'] ?? 0 }}</h5>
                     <small class="text-muted">Admin</small>
                 </div>
             </div>
@@ -38,8 +38,8 @@
                     <div class="stat-icon bg-warning-light mb-2">
                         <i class="fas fa-user-tie text-warning fa-2x"></i>
                     </div>
-                    <h5 class="fw-bold">{{ $kepsekCount ?? 1 }}</h5>
-                    <small class="text-muted">Kepsek</small>
+                    <h5 class="fw-bold">{{ $stats['keuangan'] ?? 0 }}</h5>
+                    <small class="text-muted">Keuangan</small>
                 </div>
             </div>
         </div>
@@ -49,30 +49,19 @@
                     <div class="stat-icon bg-success-light mb-2">
                         <i class="fas fa-calculator text-success fa-2x"></i>
                     </div>
-                    <h5 class="fw-bold">{{ $keuanganCount ?? 2 }}</h5>
-                    <small class="text-muted">Keuangan</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card stat-card">
-                <div class="card-body text-center py-3">
-                    <div class="stat-icon bg-info-light mb-2">
-                        <i class="fas fa-check-circle text-info fa-2x"></i>
-                    </div>
-                    <h5 class="fw-bold">{{ $verifikatorCount ?? 4 }}</h5>
+                    <h5 class="fw-bold">{{ $stats['verifikator'] ?? 0 }}</h5>
                     <small class="text-muted">Verifikator</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-4">
             <div class="card stat-card">
                 <div class="card-body text-center py-3">
                     <div class="stat-icon bg-secondary-light mb-2">
                         <i class="fas fa-user-graduate text-secondary fa-2x"></i>
                     </div>
-                    <h5 class="fw-bold">{{ $pendaftarCount ?? 35 }}</h5>
-                    <small class="text-muted">Pendaftar</small>
+                    <h5 class="fw-bold">{{ $stats['total_pendaftar'] ?? 0 }}</h5>
+                    <small class="text-muted">Total Pendaftar</small>
                 </div>
             </div>
         </div>
@@ -127,107 +116,66 @@
                             <th>Nama</th>
                             <th>Email</th>
                             <th>Role</th>
-                            <th>Login Terakhir</th>
                             <th>Tgl Dibuat</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($users ?? [] as $index => $user)
+                        @forelse($users as $user)
                         <tr>
-                            <td><span class="badge bg-secondary">{{ $user->id ?? $index+1 }}</span></td>
-                            <td class="fw-medium">{{ $user->nama ?? 'User '.($index+1) }}</td>
-                            <td>{{ $user->email ?? 'user'.($index+1).'@ppdb.com' }}</td>
+                            <td><span class="badge bg-secondary">{{ $user->id }}</span></td>
+                            <td class="fw-medium">{{ $user->nama }}</td>
+                            <td>{{ $user->email }}</td>
                             <td>
                                 @php
-                                    $roles = ['admin', 'kepsek', 'keuangan', 'verifikator_adm', 'pendaftar'];
-                                    $colors = ['danger', 'warning', 'success', 'info', 'secondary'];
-                                    $roleIndex = $index % 5;
-                                    $role = $user->role ?? $roles[$roleIndex];
-                                    $color = $colors[array_search($role, $roles)] ?? 'secondary';
+                                    $roleColors = [
+                                        'admin' => 'danger',
+                                        'kepsek' => 'warning', 
+                                        'keuangan' => 'success',
+                                        'verifikator_adm' => 'info',
+                                        'pendaftar' => 'secondary'
+                                    ];
+                                    $color = $roleColors[$user->role] ?? 'secondary';
                                 @endphp
-                                <span class="badge bg-{{ $color }}">{{ ucfirst($role) }}</span>
+                                <span class="badge bg-{{ $color }}">{{ ucfirst(str_replace('_', ' ', $user->role)) }}</span>
                             </td>
-
-                            <td>{{ date('d/m/Y H:i', strtotime('-'.rand(1,72).' hours')) }}</td>
-                            <td>{{ date('d/m/Y', strtotime('-'.rand(1,365).' days')) }}</td>
+                            <td>{{ $user->created_at ? $user->created_at->format('d/m/Y') : '-' }}</td>
                             <td>
-                                <div class="btn-group" role="group">
-                                    <button class="btn btn-outline-info btn-sm" onclick="viewDetail({{ $user->id ?? $index+1 }})" title="Detail">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm" onclick="editUser({{ $user->id ?? $index+1 }})" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteUser({{ $user->id ?? $index+1 }})" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                <div class="d-flex gap-1">
+                                    <x-action-button variant="info" icon="fas fa-eye" onclick="viewDetail({{ $user->id }})" title="Detail" />
+                                    <x-action-button variant="primary" icon="fas fa-edit" onclick="editUser({{ $user->id }})" title="Edit" />
+                                    @if($user->id !== auth()->id())
+                                    <x-action-button variant="danger" icon="fas fa-trash" onclick="deleteUser({{ $user->id }})" title="Hapus" />
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                         @empty
-                        @for($i = 1; $i <= 20; $i++)
                         <tr>
-                            <td><span class="badge bg-secondary">{{ $i }}</span></td>
-                            <td class="fw-medium">{{ ['Admin System', 'Kepala Sekolah', 'Staff Keuangan', 'Verifikator 1', 'Ahmad Rizki', 'Siti Nurhaliza', 'Budi Santoso'][(($i-1) % 7)] }}</td>
-                            <td>{{ ['admin@ppdb.com', 'kepsek@ppdb.com', 'keuangan@ppdb.com', 'verifikator@ppdb.com', 'ahmad@gmail.com', 'siti@gmail.com', 'budi@gmail.com'][(($i-1) % 7)] }}</td>
-                            <td>
-                                @php
-                                    $roles = ['admin', 'kepsek', 'keuangan', 'verifikator_adm', 'pendaftar', 'pendaftar', 'pendaftar'];
-                                    $colors = ['danger', 'warning', 'success', 'info', 'secondary', 'secondary', 'secondary'];
-                                    $role = $roles[($i-1) % 7];
-                                    $color = $colors[($i-1) % 7];
-                                @endphp
-                                <span class="badge bg-{{ $color }}">{{ ucfirst($role) }}</span>
-                            </td>
-
-                            <td>{{ date('d/m/Y H:i', strtotime('-'.rand(1,72).' hours')) }}</td>
-                            <td>{{ date('d/m/Y', strtotime('-'.rand(1,365).' days')) }}</td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <button class="btn btn-outline-info btn-sm" onclick="viewDetail({{ $i }})" title="Detail">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="btn btn-outline-primary btn-sm" onclick="editUser({{ $i }})" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteUser({{ $i }})" title="Hapus">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                <i class="fas fa-users fa-3x mb-3 d-block"></i>
+                                <h6>Belum ada data pengguna</h6>
+                                <p class="mb-0">Klik tombol "Tambah Akun" untuk menambahkan pengguna baru</p>
                             </td>
                         </tr>
-                        @endfor
                         @endforelse
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
+            @if($users->hasPages())
             <div class="d-flex justify-content-between align-items-center mt-3">
                 <div>
-                    <small class="text-muted">Menampilkan 1-20 dari 45 data</small>
+                    <small class="text-muted">
+                        Menampilkan {{ $users->firstItem() }}-{{ $users->lastItem() }} dari {{ $users->total() }} data
+                    </small>
                 </div>
                 <nav>
-                    <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item disabled">
-                            <span class="page-link">Previous</span>
-                        </li>
-                        <li class="page-item active">
-                            <span class="page-link">1</span>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">2</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">3</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">Next</a>
-                        </li>
-                    </ul>
+                    {{ $users->links('pagination::bootstrap-4') }}
                 </nav>
             </div>
+            @endif
         </div>
     </div>
 </div>
@@ -339,7 +287,6 @@
                             <tr><td class="fw-medium">Email</td><td id="detailEmail">-</td></tr>
                             <tr><td class="fw-medium">Role</td><td id="detailRole">-</td></tr>
                             <tr><td class="fw-medium">Status</td><td id="detailStatus">-</td></tr>
-                            <tr><td class="fw-medium">Login Terakhir</td><td id="detailLoginTerakhir">-</td></tr>
                             <tr><td class="fw-medium">Tanggal Dibuat</td><td id="detailTglDibuat">-</td></tr>
                         </table>
                     </div>
@@ -483,8 +430,7 @@ function viewDetail(id) {
     const nama = row.cells[1].textContent.trim();
     const email = row.cells[2].textContent.trim();
     const role = row.cells[3].textContent.trim();
-    const loginTerakhir = row.cells[4].textContent.trim();
-    const tglDibuat = row.cells[5].textContent.trim();
+    const tglDibuat = row.cells[4].textContent.trim();
     
     // Populate detail modal
     document.getElementById('detailId').textContent = id;
@@ -492,7 +438,6 @@ function viewDetail(id) {
     document.getElementById('detailEmail').textContent = email;
     document.getElementById('detailRole').innerHTML = role;
     document.getElementById('detailStatus').innerHTML = '<span class="badge bg-success">Aktif</span>';
-    document.getElementById('detailLoginTerakhir').textContent = loginTerakhir;
     document.getElementById('detailTglDibuat').textContent = tglDibuat;
     
     // Set up password change form

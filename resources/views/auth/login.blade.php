@@ -1,175 +1,289 @@
-@extends('layouts.guest')
-
-@section('content')
-<div class="text-center mb-4">
-    <div class="login-icon mb-3">
-        <i class="fas fa-user-circle fa-4x text-primary"></i>
-    </div>
-    <h4 class="fw-bold text-dark mb-1">Selamat Datang</h4>
-    <p class="text-muted">Masuk ke akun PPDB Online Anda</p>
-</div>
-
-@if (session('status'))
-    <div class="alert alert-success border-0 shadow-sm mb-4">
-        <i class="fas fa-check-circle me-2"></i>{{ session('status') }}
-    </div>
-@endif
-
-@if (session('success'))
-    <div class="alert alert-success border-0 shadow-sm mb-4">
-        <i class="fas fa-check-circle me-2"></i>{{ session('success') }}
-    </div>
-@endif
-
-<form method="POST" action="{{ route('login') }}" class="login-form">
-    @csrf
-
-    <!-- Email Address -->
-    <div class="mb-4">
-        <label for="email" class="form-label fw-medium text-dark">
-            <i class="fas fa-envelope me-2 text-primary"></i>Email
-        </label>
-        <input id="email" class="form-control form-control-lg border-0 shadow-sm" 
-               type="email" name="email" value="{{ old('email') }}" 
-               placeholder="Masukkan email Anda" required autofocus autocomplete="username">
-        @error('email')
-            <div class="text-danger small mt-2">
-                <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
-            </div>
-        @enderror
-    </div>
-
-    <!-- Password -->
-    <div class="mb-4">
-        <label for="password" class="form-label fw-medium text-dark">
-            <i class="fas fa-lock me-2 text-primary"></i>Password
-        </label>
-        <div class="position-relative">
-            <input id="password" class="form-control form-control-lg border-0 shadow-sm" 
-                   type="password" name="password" placeholder="Masukkan password Anda" 
-                   required autocomplete="current-password">
-            <button type="button" class="btn position-absolute end-0 top-50 translate-middle-y me-3" 
-                    onclick="togglePassword()" style="border: none; background: none;">
-                <i class="fas fa-eye text-muted" id="toggleIcon"></i>
-            </button>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PPDB Online</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #4F46E5;
+            color: #333333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            display: flex;
+            max-width: 1000px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .left-section {
+            flex: 1;
+            padding: 40px;
+            background-color: #4F46E5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            color: #ffffff;
+        }
+        
+        .right-section {
+            flex: 1;
+            padding: 40px;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+        
+        h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #f0f0f0;
+        }
+        
+        .description {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            color: #e8e8e8;
+        }
+        
+        hr {
+            border: none;
+            height: 1px;
+            background-color: rgba(255, 255, 255, 0.3);
+            margin: 40px 0;
+        }
+        
+        .testimonial {
+            font-style: italic;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #ffffff;
+        }
+        
+        .testimonial-author {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #ffffff;
+        }
+        
+        .testimonial-role {
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333333;
+        }
+        
+        input {
+            width: 100%;
+            background-color: #f8f9fa;
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            color: #333333;
+            font-size: 15px;
+            transition: border-color 0.2s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #4F46E5;
+            background-color: #ffffff;
+        }
+        
+        .alert {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .error {
+            color: #ef4444;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .btn-login {
+            background-color: #4F46E5;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            width: 100%;
+        }
+        
+        .btn-login:hover {
+            background-color: #4338CA;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4);
+        }
+        
+        .links {
+            text-align: center;
+            margin-top: 20px;
+            color: #666666;
+        }
+        
+        .links a {
+            color: #4F46E5;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .links a:hover {
+            text-decoration: underline;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .checkbox-group input {
+            width: auto;
+            margin-right: 8px;
+        }
+        
+        .checkbox-group label {
+            margin-bottom: 0;
+            color: #666666;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .left-section, .right-section {
+                padding: 30px 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-section">
+            <h1>Selamat Datang</h1>
+            <h2>Masuk ke akun PPDB Online</h2>
+            
+            <p class="description">
+                Sistem Penerimaan Peserta Didik Baru Online.<br>
+                Proses pendaftaran yang mudah, cepat, dan aman untuk calon siswa baru.
+            </p>
+            
+            <hr>
+            
+            <p class="testimonial">
+                Sistem PPDB Online sangat memudahkan proses pendaftaran. Interface yang user-friendly dan proses yang cepat membuat pengalaman pendaftaran menjadi menyenangkan.
+            </p>
+            
+            <div class="testimonial-author">Ahmad Rizki</div>
+            <div class="testimonial-role">Orang Tua Siswa</div>
         </div>
-        @error('password')
-            <div class="text-danger small mt-2">
-                <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
-            </div>
-        @enderror
-    </div>
-
-    <!-- Remember Me -->
-    <div class="mb-4">
-        <div class="form-check">
-            <input id="remember_me" type="checkbox" class="form-check-input" name="remember">
-            <label class="form-check-label text-muted" for="remember_me">
-                Ingat saya selama 30 hari
-            </label>
-        </div>
-    </div>
-
-    <!-- Login Button -->
-    <div class="d-grid mb-4">
-        <button type="submit" class="btn btn-primary btn-lg shadow-sm">
-            <i class="fas fa-sign-in-alt me-2"></i>Masuk ke Dashboard
-        </button>
-    </div>
-
-
-
-    <!-- Back to Home -->
-    <div class="text-center mb-3">
-        <a href="/" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Kembali ke Beranda
-        </a>
-    </div>
-
-    <!-- Links -->
-    <div class="text-center">
-        <div class="mb-2">
-            @if (Route::has('password.request'))
-                <a class="text-decoration-none text-primary" href="{{ route('password.request') }}">
-                    <i class="fas fa-key me-1"></i>Lupa password?
-                </a>
+        
+        <div class="right-section">
+            @if (session('status'))
+                <div class="alert">
+                    <i class="fas fa-check-circle"></i> {{ session('status') }}
+                </div>
             @endif
-        </div>
-        <div>
-            <span class="text-muted">Belum punya akun?</span>
-            <a class="text-decoration-none text-primary fw-medium" href="{{ route('register') }}">
-                Daftar sekarang
-            </a>
+
+            @if (session('success'))
+                <div class="alert">
+                    <i class="fas fa-check-circle"></i> {{ session('success') }}
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('login') }}">
+                @csrf
+                
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" value="{{ old('email') }}" placeholder="Masukkan email Anda" required autofocus>
+                    @error('email')
+                        <div class="error">
+                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+                
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" name="password" placeholder="Masukkan password Anda" required>
+                    @error('password')
+                        <div class="error">
+                            <i class="fas fa-exclamation-circle"></i> {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="remember_me" name="remember">
+                    <label for="remember_me">Ingat saya selama 30 hari</label>
+                </div>
+                
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Masuk ke Dashboard
+                </button>
+                
+                <div class="links">
+                    @if (Route::has('password.request'))
+                        <a href="{{ route('password.request') }}">
+                            <i class="fas fa-key"></i> Lupa password?
+                        </a>
+                        <br><br>
+                    @endif
+                    Belum punya akun? <a href="{{ route('register') }}">Daftar sekarang</a>
+                    <br><br>
+                    <a href="/">
+                        <i class="fas fa-arrow-left"></i> Kembali ke Beranda
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
-</form>
-
-<style>
-.login-form {
-    animation: fadeInUp 0.6s ease-out;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.form-control:focus {
-    border-color: var(--bs-primary);
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, #0d6efd 0%, #0056b3 100%);
-    border: none;
-    transition: all 0.3s ease;
-}
-
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3);
-}
-
-.btn-outline-success {
-    transition: all 0.3s ease;
-}
-
-.btn-outline-success:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(25, 135, 84, 0.3);
-}
-
-.login-icon {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-</style>
-
-<script>
-function togglePassword() {
-    const passwordInput = document.getElementById('password');
-    const toggleIcon = document.getElementById('toggleIcon');
-    
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        toggleIcon.classList.remove('fa-eye');
-        toggleIcon.classList.add('fa-eye-slash');
-    } else {
-        passwordInput.type = 'password';
-        toggleIcon.classList.remove('fa-eye-slash');
-        toggleIcon.classList.add('fa-eye');
-    }
-}
-</script>
-@endsection
+</body>
+</html>

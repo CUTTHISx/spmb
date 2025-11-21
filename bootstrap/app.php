@@ -12,10 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
 ->withMiddleware(function (Middleware $middleware) {
     $middleware->alias([
-        'ceklogin' => \App\Http\Middleware\CekLogin::class,
-        'cekrole' => \App\Http\Middleware\CekRole::class,
-        
-
+        'role' => \App\Http\Middleware\CheckRole::class,
+        'cek.login' => \App\Http\Middleware\CekLogin::class,
     ]);
 })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -188,11 +188,23 @@
     <section id="harga" class="py-5">
         <div class="container py-5">
             <h2 class="text-center section-title">Biaya Pendaftaran</h2>
+            @php
+                $activeGelombang = App\Models\Gelombang::where('is_active', true)->first();
+                $biayaDaftar = $activeGelombang ? $activeGelombang->biaya_daftar : 250000;
+            @endphp
+            @if($activeGelombang)
+            <div class="text-center mb-4">
+                <span class="badge bg-primary fs-5 px-4 py-2">
+                    <i class="bi bi-calendar-check me-2"></i>{{ $activeGelombang->nama }}
+                </span>
+                <p class="text-muted mt-2">{{ date('d M Y', strtotime($activeGelombang->tgl_mulai)) }} - {{ date('d M Y', strtotime($activeGelombang->tgl_selesai)) }}</p>
+            </div>
+            @endif
             <div class="row justify-content-center">
                 <div class="col-md-8 col-lg-6">
                     <div class="pricing-card text-center">
                         <h4 class="fw-bold mb-3">Biaya Pendaftaran PPDB</h4>
-                        <div class="price mb-3">Rp 250.000</div>
+                        <div class="price mb-3">Rp {{ number_format($biayaDaftar, 0, ',', '.') }}</div>
                         <p class="text-muted mb-4">Biaya pendaftaran sudah termasuk:</p>
                         <ul class="list-unstyled text-start mb-4">
                             <li class="mb-2"><i class="bi bi-check-circle-fill text-primary me-2"></i>Formulir pendaftaran</li>

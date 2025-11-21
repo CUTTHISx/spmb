@@ -8,7 +8,7 @@ class Pengguna extends Authenticatable
 {
     protected $table = 'pengguna';
     protected $fillable = [
-        'nama', 'email', 'hp', 'password_hash', 'role', 'aktif', 'status', 'verification_token'
+        'nama', 'email', 'hp', 'password_hash', 'role', 'aktif', 'status', 'verification_token', 'gelombang_id'
     ];
     public $timestamps = true;
     
@@ -25,5 +25,10 @@ class Pengguna extends Authenticatable
     public function getNameAttribute()
     {
         return $this->nama;
+    }
+    
+    public function gelombang()
+    {
+        return $this->belongsTo(Gelombang::class, 'gelombang_id');
     }
 }

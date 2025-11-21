@@ -205,23 +205,26 @@
                 <div class="card-body">
                     <div class="text-center">
                         <h6 class="fw-bold mb-3">Verifikasi Pendaftaran</h6>
-                        <div class="d-flex gap-2 justify-content-center flex-wrap">
-                            @if($pendaftar->status_berkas == 'PENDING' || $pendaftar->status_data == 'PENDING')
-                            <span class="badge bg-success-light text-success" style="cursor: pointer;" onclick="showVerificationModal({{ $pendaftar->id }}, 'VERIFIED')" title="Lulus">
-                                <i class="fas fa-check me-1"></i>Lulus
-                            </span>
-                            <span class="badge bg-warning-light text-warning" style="cursor: pointer;" onclick="showVerificationModal({{ $pendaftar->id }}, 'REVISION')" title="Perbaikan">
-                                <i class="fas fa-edit me-1"></i>Perbaikan
-                            </span>
-                            <span class="badge bg-danger-light text-danger" style="cursor: pointer;" onclick="showVerificationModal({{ $pendaftar->id }}, 'REJECTED')" title="Tolak">
-                                <i class="fas fa-times me-1"></i>Tolak
-                            </span>
-                            @else
-                            <span class="badge bg-{{ $pendaftar->status_berkas == 'VERIFIED' ? 'success' : ($pendaftar->status_berkas == 'REJECTED' ? 'danger' : 'warning') }}">
-                                <i class="fas fa-{{ $pendaftar->status_berkas == 'VERIFIED' ? 'check-circle' : ($pendaftar->status_berkas == 'REJECTED' ? 'times-circle' : 'edit') }} me-1"></i>{{ $pendaftar->status_berkas }}
-                            </span>
-                            @endif
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-center gap-2 mb-2">
+                                <span class="badge bg-{{ $pendaftar->status_berkas == 'VERIFIED' ? 'success' : ($pendaftar->status_berkas == 'REJECTED' ? 'danger' : 'secondary') }}">
+                                    Berkas: {{ $pendaftar->status_berkas ?? 'PENDING' }}
+                                </span>
+                                <span class="badge bg-{{ $pendaftar->status_data == 'VERIFIED' ? 'success' : ($pendaftar->status_data == 'REJECTED' ? 'danger' : 'secondary') }}">
+                                    Data: {{ $pendaftar->status_data ?? 'PENDING' }}
+                                </span>
+                            </div>
                         </div>
+                        @if(($pendaftar->status_berkas != 'VERIFIED' || $pendaftar->status_data != 'VERIFIED') && $pendaftar->status != 'REJECTED_ADM')
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button class="btn btn-success" onclick="showVerificationModal({{ $pendaftar->id }}, 'VERIFIED')">
+                                <i class="fas fa-check me-1"></i>Lulus
+                            </button>
+                            <button class="btn btn-danger" onclick="showVerificationModal({{ $pendaftar->id }}, 'REJECTED')">
+                                <i class="fas fa-times me-1"></i>Tolak
+                            </button>
+                        </div>
+                        @endif
                     </div>
                     @if($pendaftar->catatan_verifikasi)
                     <div class="mt-4 p-3 bg-light rounded border-start border-primary border-4">
@@ -277,9 +280,22 @@ function showVerificationModal(id, status) {
     document.getElementById('pendaftarId').value = id;
     document.getElementById('verificationStatus').value = status;
     
-    const statusText = status === 'VERIFIED' ? 'Lulus' : (status === 'REVISION' ? 'Perbaikan' : 'Tolak');
-    const statusClass = status === 'VERIFIED' ? 'success' : (status === 'REVISION' ? 'warning' : 'danger');
+    // Set type to both for combined verification
+    const typeInput = document.getElementById('verificationType');
+    if (typeInput) {
+        typeInput.value = 'both';
+    } else {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.id = 'verificationType';
+        hiddenInput.value = 'both';
+        document.getElementById('verificationForm').appendChild(hiddenInput);
+    }
     
+    const statusText = status === 'VERIFIED' ? 'Lulus' : 'Tolak';
+    const statusClass = status === 'VERIFIED' ? 'success' : 'danger';
+    
+    document.querySelector('#verificationModal .modal-title').innerHTML = 'Verifikasi Pendaftaran';
     document.getElementById('statusDisplay').innerHTML = `<span class="badge bg-${statusClass}">${statusText}</span>`;
     document.getElementById('catatan').value = '';
     
@@ -291,6 +307,11 @@ function submitVerification() {
     const status = document.getElementById('verificationStatus').value;
     const catatan = document.getElementById('catatan').value;
     
+    if (!status) {
+        alert('Status verifikasi tidak valid!');
+        return;
+    }
+    
     if (!catatan.trim() || catatan.trim().length < 5) {
         alert('Catatan harus diisi minimal 5 karakter!');
         return;
@@ -298,7 +319,6 @@ function submitVerification() {
     
     const submitBtn = document.querySelector('#verificationModal .btn-primary');
     
-    // Disable button during request
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Menyimpan...';
     
@@ -310,33 +330,25 @@ function submitVerification() {
             'Accept': 'application/json'
         },
         body: JSON.stringify({ 
+            jenis: 'both',
             status: status, 
             catatan: catatan.trim() 
         })
     })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => {
-                throw new Error(err.message || `HTTP ${response.status}: ${response.statusText}`);
-            });
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
             alert('Verifikasi berhasil disimpan!');
             bootstrap.Modal.getInstance(document.getElementById('verificationModal')).hide();
             location.reload();
         } else {
-            throw new Error(data.message || 'Terjadi kesalahan tidak diketahui');
+            alert('Error: ' + data.message);
         }
     })
     .catch(error => {
-        console.error('Verification error:', error);
         alert('Error: ' + error.message);
     })
     .finally(() => {
-        // Re-enable button
         submitBtn.disabled = false;
         submitBtn.innerHTML = 'Simpan Verifikasi';
     });

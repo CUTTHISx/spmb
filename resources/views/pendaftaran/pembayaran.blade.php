@@ -2,9 +2,62 @@
 
 @section('title', 'Pembayaran - PPDB Online')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/layouts/dashboard.css') }}">
+<style>
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.card {
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+.border-dashed {
+    border-style: dashed !important;
+}
+
+.font-monospace {
+    font-family: 'Courier New', monospace;
+}
+
+.border-4 {
+    border-width: 4px !important;
+}
+
+.bg-opacity-20 {
+    background-color: rgba(255,255,255,0.2) !important;
+}
+</style>
+@endsection
+
 @section('content')
 <div class="container mt-4">
-    @if(!$canPay)
+    @if(!$pendaftar)
+    <!-- Belum Ada Data Pendaftar -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-4x text-warning mb-3"></i>
+                    <h3 class="fw-bold text-warning">Data Pendaftaran Belum Lengkap</h3>
+                    <p class="text-muted mb-4">
+                        Anda harus mengisi form pendaftaran terlebih dahulu sebelum dapat melakukan pembayaran.
+                    </p>
+                    <a href="/pendaftaran" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i>Isi Form Pendaftaran
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    @elseif(!$canPay && $pendaftar)
     <!-- Belum Bisa Bayar -->
     <div class="row">
         <div class="col-12">
@@ -18,8 +71,8 @@
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle me-2"></i>
                         <strong>Status Verifikasi:</strong><br>
-                        Berkas: <span class="badge bg-{{ $pendaftar->status_berkas == 'VERIFIED' ? 'success' : ($pendaftar->status_berkas == 'REJECTED' ? 'danger' : 'warning') }}">{{ $pendaftar->status_berkas ?? 'PENDING' }}</span><br>
-                        Data: <span class="badge bg-{{ $pendaftar->status_data == 'VERIFIED' ? 'success' : ($pendaftar->status_data == 'REJECTED' ? 'danger' : 'warning') }}">{{ $pendaftar->status_data ?? 'PENDING' }}</span>
+                        Berkas: <span class="badge bg-{{ $pendaftar && $pendaftar->status_berkas == 'VERIFIED' ? 'success' : (($pendaftar && $pendaftar->status_berkas == 'REJECTED') ? 'danger' : 'warning') }}">{{ $pendaftar->status_berkas ?? 'PENDING' }}</span><br>
+                        Data: <span class="badge bg-{{ $pendaftar && $pendaftar->status_data == 'VERIFIED' ? 'success' : (($pendaftar && $pendaftar->status_data == 'REJECTED') ? 'danger' : 'warning') }}">{{ $pendaftar->status_data ?? 'PENDING' }}</span>
                     </div>
                     <a href="/dashboard/pendaftar" class="btn btn-primary">
                         <i class="fas fa-arrow-left me-1"></i>Kembali ke Dashboard
@@ -57,8 +110,8 @@
                 <div class="card-header bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0 fw-bold">Status Pembayaran</h5>
-                        <span class="badge bg-{{ $pendaftar->pembayaran ? ($pendaftar->pembayaran->status_verifikasi == 'LUNAS' ? 'success' : ($pendaftar->pembayaran->status_verifikasi == 'DITOLAK' ? 'danger' : 'warning')) : 'secondary' }}">
-                            {{ $pendaftar->pembayaran ? ($pendaftar->pembayaran->status_verifikasi == 'LUNAS' ? 'Terbayar' : ($pendaftar->pembayaran->status_verifikasi == 'DITOLAK' ? 'Ditolak' : 'Menunggu Verifikasi')) : 'Belum Bayar' }}
+                        <span class="badge bg-{{ ($pendaftar && $pendaftar->pembayaran) ? ($pendaftar->pembayaran->status_verifikasi == 'LUNAS' ? 'success' : ($pendaftar->pembayaran->status_verifikasi == 'DITOLAK' ? 'danger' : 'warning')) : 'secondary' }}">
+                            {{ ($pendaftar && $pendaftar->pembayaran) ? ($pendaftar->pembayaran->status_verifikasi == 'LUNAS' ? 'Terbayar' : ($pendaftar->pembayaran->status_verifikasi == 'DITOLAK' ? 'Ditolak' : 'Menunggu Verifikasi')) : 'Belum Bayar' }}
                         </span>
                     </div>
                 </div>
@@ -66,15 +119,15 @@
                     <div class="row">
                         <div class="col-md-3">
                             <p class="text-muted mb-1">Nomor Pendaftaran</p>
-                            <p class="fw-bold">{{ $pendaftar->no_pendaftaran }}</p>
+                            <p class="fw-bold">{{ $pendaftar->no_pendaftaran ?? 'Belum Ada' }}</p>
                         </div>
                         <div class="col-md-3">
                             <p class="text-muted mb-1">Jurusan Pilihan</p>
-                            <p class="fw-bold">{{ $pendaftar->jurusan->nama ?? '-' }}</p>
+                            <p class="fw-bold">{{ ($pendaftar && $pendaftar->jurusan) ? $pendaftar->jurusan->nama : '-' }}</p>
                         </div>
                         <div class="col-md-3">
                             <p class="text-muted mb-1">Biaya Pendaftaran</p>
-                            <p class="fw-bold text-primary fs-4">Rp 250.000</p>
+                            <p class="fw-bold text-primary fs-4">Rp {{ number_format($biayaPendaftaran ?? 250000, 0, ',', '.') }}</p>
                         </div>
                         <div class="col-md-3">
                             <p class="text-muted mb-1">Batas Waktu</p>
@@ -104,7 +157,7 @@
                                 <p class="mb-1"><strong>Bank BCA</strong></p>
                                 <p class="mb-1">No. Rekening: <span class="badge bg-light text-dark font-monospace">1234567890</span></p>
                                 <p class="mb-1">Atas Nama: <strong>YAYASAN PENDIDIKAN ABC</strong></p>
-                                <p class="text-danger fw-bold">Nominal: Rp 250.000</p>
+                                <p class="text-danger fw-bold">Nominal: Rp {{ number_format($biayaPendaftaran ?? 250000, 0, ',', '.') }}</p>
                             </div>
                         </div>
                     </div>
@@ -113,7 +166,7 @@
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         <strong>Penting!</strong>
                         <ul class="mb-0 mt-2">
-                            <li>Transfer sesuai nominal yang tertera (Rp 250.000)</li>
+                            <li>Transfer sesuai nominal yang tertera (Rp {{ number_format($biayaPendaftaran ?? 250000, 0, ',', '.') }})</li>
                             <li>Simpan bukti transfer untuk diupload</li>
                             <li>Pembayaran maksimal 3 hari setelah verifikasi administrasi lulus</li>
                             <li>Jika lewat batas waktu, pendaftaran akan dibatalkan</li>
@@ -144,7 +197,7 @@
                                     <div class="border border-2 border-dashed rounded p-4 text-center">
                                         <input type="file" name="bukti_pembayaran" accept="image/*,.pdf" class="d-none" id="bukti-file" required>
                                         <label for="bukti-file" style="cursor: pointer;">
-                                            @if($pendaftar->pembayaran && $pendaftar->pembayaran->bukti_pembayaran)
+                                            @if($pendaftar && $pendaftar->pembayaran && $pendaftar->pembayaran->bukti_pembayaran)
                                                 <i class="fas fa-file-check fa-3x text-success mb-2"></i>
                                                 <p class="text-success fw-bold">Bukti sudah diupload</p>
                                                 <a href="/{{ $pendaftar->pembayaran->bukti_pembayaran }}" target="_blank" class="btn btn-sm btn-outline-primary">Lihat Bukti</a>
@@ -162,25 +215,25 @@
                                     <label class="form-label">Nama Pengirim</label>
                                     <input type="text" name="nama_pengirim" class="form-control" 
                                            placeholder="Nama yang tertera di rekening pengirim" 
-                                           value="{{ $pendaftar->pembayaran->nama_pengirim ?? '' }}" required>
+                                           value="{{ ($pendaftar && $pendaftar->pembayaran) ? $pendaftar->pembayaran->nama_pengirim : '' }}" required>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label class="form-label">Tanggal Transfer</label>
                                     <input type="date" name="tanggal_transfer" class="form-control" 
-                                           value="{{ $pendaftar->pembayaran->tanggal_transfer ?? '' }}" required>
+                                           value="{{ ($pendaftar && $pendaftar->pembayaran) ? $pendaftar->pembayaran->tanggal_transfer : '' }}" required>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label class="form-label">Nominal Transfer</label>
                                     <input type="number" name="nominal" class="form-control" 
-                                           value="250000" readonly>
+                                           value="{{ $biayaPendaftaran ?? 250000 }}" readonly>
                                 </div>
                                 
                                 <div class="mb-3">
                                     <label class="form-label">Catatan (Opsional)</label>
                                     <textarea name="catatan" class="form-control" rows="3" 
-                                              placeholder="Catatan tambahan jika ada">{{ $pendaftar->pembayaran->catatan ?? '' }}</textarea>
+                                              placeholder="Catatan tambahan jika ada">{{ ($pendaftar && $pendaftar->pembayaran) ? $pendaftar->pembayaran->catatan : '' }}</textarea>
                                 </div>
                             </div>
                         </div>
@@ -191,7 +244,7 @@
                             </a>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-upload me-1"></i>
-                                {{ $pendaftar->pembayaran ? 'Update' : 'Upload' }} Bukti Pembayaran
+                                {{ ($pendaftar && $pendaftar->pembayaran) ? 'Update' : 'Upload' }} Bukti Pembayaran
                             </button>
                         </div>
                     </form>

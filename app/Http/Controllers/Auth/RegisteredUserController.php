@@ -38,12 +38,16 @@ class RegisteredUserController extends Controller
         }
 
         try {
+            // Get active gelombang
+            $gelombang = \App\Models\Gelombang::where('is_active', true)->first();
+            
             // Create user after OTP verification
             $user = Pengguna::create([
                 'nama' => $registrationData['name'],
                 'email' => $registrationData['email'],
                 'password_hash' => Hash::make($registrationData['password']),
                 'role' => 'pendaftar',
+                'gelombang_id' => $gelombang ? $gelombang->id : null,
             ]);
 
             // Clear registration session

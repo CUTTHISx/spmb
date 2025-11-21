@@ -4,6 +4,36 @@
 
 @section('content')
 <div class="container mt-4">
+    <!-- Success/Error Messages -->
+    @if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Berhasil!</strong> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+    
+    @if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Error!</strong> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+    
+    @if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Validasi Error!</strong>
+        <ul class="mb-0 mt-2">
+            @foreach($errors->all() as $error)
+            <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+    
     <!-- Progress Steps -->
     <div class="row mb-4">
         <div class="col-12">
@@ -35,7 +65,7 @@
         </div>
     </div>
 
-    <form action="/pendaftaran/store" method="POST" id="pendaftaranForm" enctype="multipart/form-data">
+    <form action="{{ url('/pendaftaran/store') }}" method="POST" id="pendaftaranForm" enctype="multipart/form-data">
         @csrf
         
         <!-- Step 1: Data Siswa -->
@@ -73,14 +103,16 @@
                     
                     <div class="col-md-6 mb-3">
                         <label class="form-label">NIK <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="nik" maxlength="16" value="{{ $pendaftar && $pendaftar->dataSiswa ? $pendaftar->dataSiswa->nik : '' }}" required>
+                        <input type="text" class="form-control" name="nik" maxlength="16" pattern="[0-9]{16}" value="{{ $pendaftar && $pendaftar->dataSiswa ? $pendaftar->dataSiswa->nik : '' }}" required>
+                        <small class="text-muted">16 digit angka</small>
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">NISN <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="nisn" maxlength="10" value="{{ $pendaftar && $pendaftar->dataSiswa ? $pendaftar->dataSiswa->nisn : '' }}" required>
+                        <input type="text" class="form-control" name="nisn" maxlength="10" pattern="[0-9]{10}" value="{{ $pendaftar && $pendaftar->dataSiswa ? $pendaftar->dataSiswa->nisn : '' }}" required>
+                        <small class="text-muted">10 digit angka</small>
                     </div>
                     
                     <div class="col-md-6 mb-3">
@@ -167,7 +199,8 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">No. HP Ayah</label>
-                        <input type="tel" class="form-control" name="hp_ayah" value="{{ $pendaftar && $pendaftar->dataOrtu ? $pendaftar->dataOrtu->hp_ayah : '' }}">
+                        <input type="number" class="form-control" name="hp_ayah" value="{{ $pendaftar && $pendaftar->dataOrtu ? $pendaftar->dataOrtu->hp_ayah : '' }}">
+                        <small class="text-muted">Contoh: 08123456789</small>
                     </div>
                 </div>
 
@@ -183,7 +216,8 @@
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">No. HP Ibu</label>
-                        <input type="tel" class="form-control" name="hp_ibu" value="{{ $pendaftar && $pendaftar->dataOrtu ? $pendaftar->dataOrtu->hp_ibu : '' }}">
+                        <input type="number" class="form-control" name="hp_ibu" value="{{ $pendaftar && $pendaftar->dataOrtu ? $pendaftar->dataOrtu->hp_ibu : '' }}">
+                        <small class="text-muted">Contoh: 08123456789</small>
                     </div>
                 </div>
 
@@ -195,7 +229,8 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">No. HP Wali</label>
-                        <input type="tel" class="form-control" name="wali_hp" value="{{ $pendaftar && $pendaftar->dataOrtu ? $pendaftar->dataOrtu->wali_hp : '' }}">
+                        <input type="number" class="form-control" name="wali_hp" value="{{ $pendaftar && $pendaftar->dataOrtu ? $pendaftar->dataOrtu->wali_hp : '' }}">
+                        <small class="text-muted">Contoh: 08123456789</small>
                     </div>
                 </div>
             </div>
@@ -225,7 +260,8 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Nilai Rata-rata Rapor</label>
-                        <input type="number" class="form-control" name="nilai_rata" value="{{ $pendaftar && $pendaftar->asalSekolah ? $pendaftar->asalSekolah->nilai_rata : '' }}" step="0.01" min="0" max="100">
+                        <input type="number" class="form-control" name="nilai_rata" value="{{ $pendaftar && $pendaftar->asalSekolah ? $pendaftar->asalSekolah->nilai_rata : '' }}" placeholder="Contoh: 85.5" step="0.01" min="0" max="100">
+                        <small class="text-muted">Opsional (0-100)</small>
                     </div>
                 </div>
             </div>
@@ -240,37 +276,55 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Ijazah/Rapor SMP <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" name="ijazah" accept=".pdf,.jpg,.jpeg,.png" required>
-                        <small class="text-muted">Format: PDF, JPG, PNG. Max: 2MB</small>
+                        <input type="file" class="form-control" name="ijazah" accept=".pdf,.jpg,.jpeg,.png" {{ $pendaftar && $pendaftar->berkas->where('jenis', 'IJAZAH')->count() > 0 ? '' : 'required' }}>
+                        @if($pendaftar && $pendaftar->berkas->where('jenis', 'IJAZAH')->count() > 0)
+                        <small class="text-success"><i class="fas fa-check-circle"></i> File sudah diupload</small>
+                        @endif
+                        <small class="text-muted d-block">Format: PDF, JPG, PNG. Max: 2MB</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Kartu Keluarga <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" name="kk" accept=".pdf,.jpg,.jpeg,.png" required>
-                        <small class="text-muted">Format: PDF, JPG, PNG. Max: 2MB</small>
+                        <input type="file" class="form-control" name="kk" accept=".pdf,.jpg,.jpeg,.png" {{ $pendaftar && $pendaftar->berkas->where('jenis', 'KK')->count() > 0 ? '' : 'required' }}>
+                        @if($pendaftar && $pendaftar->berkas->where('jenis', 'KK')->count() > 0)
+                        <small class="text-success"><i class="fas fa-check-circle"></i> File sudah diupload</small>
+                        @endif
+                        <small class="text-muted d-block">Format: PDF, JPG, PNG. Max: 2MB</small>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Akta Kelahiran <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" name="akta" accept=".pdf,.jpg,.jpeg,.png" required>
-                        <small class="text-muted">Format: PDF, JPG, PNG. Max: 2MB</small>
+                        <input type="file" class="form-control" name="akta" accept=".pdf,.jpg,.jpeg,.png" {{ $pendaftar && $pendaftar->berkas->where('jenis', 'AKTA')->count() > 0 ? '' : 'required' }}>
+                        @if($pendaftar && $pendaftar->berkas->where('jenis', 'AKTA')->count() > 0)
+                        <small class="text-success"><i class="fas fa-check-circle"></i> File sudah diupload</small>
+                        @endif
+                        <small class="text-muted d-block">Format: PDF, JPG, PNG. Max: 2MB</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Pas Foto 3x4 <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" name="foto" accept=".jpg,.jpeg,.png" required>
-                        <small class="text-muted">Format: JPG, PNG. Max: 1MB</small>
+                        <input type="file" class="form-control" name="foto" accept=".jpg,.jpeg,.png" {{ $pendaftar && $pendaftar->berkas->where('nama_file', 'like', '%foto%')->count() > 0 ? '' : 'required' }}>
+                        @if($pendaftar && $pendaftar->berkas->where('nama_file', 'like', '%foto%')->count() > 0)
+                        <small class="text-success"><i class="fas fa-check-circle"></i> File sudah diupload</small>
+                        @endif
+                        <small class="text-muted d-block">Format: JPG, PNG. Max: 1MB</small>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">KIP/KKS (Opsional)</label>
                         <input type="file" class="form-control" name="kip" accept=".pdf,.jpg,.jpeg,.png">
-                        <small class="text-muted">Format: PDF, JPG, PNG. Max: 2MB</small>
+                        @if($pendaftar && $pendaftar->berkas->where('jenis', 'KIP')->count() > 0)
+                        <small class="text-success"><i class="fas fa-check-circle"></i> File sudah diupload</small>
+                        @endif
+                        <small class="text-muted d-block">Format: PDF, JPG, PNG. Max: 2MB</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Surat Keterangan Sehat</label>
                         <input type="file" class="form-control" name="surat_sehat" accept=".pdf,.jpg,.jpeg,.png">
-                        <small class="text-muted">Format: PDF, JPG, PNG. Max: 2MB</small>
+                        @if($pendaftar && $pendaftar->berkas->where('nama_file', 'like', '%surat_sehat%')->count() > 0)
+                        <small class="text-success"><i class="fas fa-check-circle"></i> File sudah diupload</small>
+                        @endif
+                        <small class="text-muted d-block">Format: PDF, JPG, PNG. Max: 2MB</small>
                     </div>
                 </div>
             </div>
@@ -577,6 +631,10 @@ document.getElementById('prevBtn').addEventListener('click', function() {
 });
 
 document.getElementById('pendaftaranForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    console.log('Form submit triggered');
+    
     // Validate all steps before submission
     const stepValidations = [
         { step: 1, valid: validateStep1() },
@@ -585,10 +643,12 @@ document.getElementById('pendaftaranForm').addEventListener('submit', function(e
         { step: 4, valid: validateStep4() }
     ];
     
+    console.log('Step validations:', stepValidations);
+    
     const invalidStep = stepValidations.find(s => !s.valid);
     
     if (invalidStep) {
-        e.preventDefault();
+        console.log('Invalid step found:', invalidStep);
         // Go to first invalid step
         currentStep = invalidStep.step;
         showStep(currentStep);
@@ -603,16 +663,25 @@ document.getElementById('pendaftaranForm').addEventListener('submit', function(e
         `;
         
         const currentStepDiv = document.getElementById(`step${currentStep}`);
+        const existingError = currentStepDiv.querySelector('.alert-danger');
+        if (existingError) existingError.remove();
         currentStepDiv.insertBefore(errorDiv, currentStepDiv.querySelector('.card-body'));
         
         return false;
     }
     
+    console.log('All validations passed, submitting form...');
+    
     // Show loading state
     const submitBtn = document.getElementById('submitBtn');
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mengirim...';
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mengirim Data...';
     submitBtn.disabled = true;
     
+    // Submit the form immediately
+    this.submit();
+    
+    // Clear localStorage after submission
     localStorage.removeItem(`ppdb_form_${userId}`);
 });
 
@@ -640,7 +709,9 @@ function validateStep4() {
     
     requiredFiles.forEach(field => {
         const fileInput = document.querySelector(`input[name="${field}"]`);
-        if (!fileInput.files.length) {
+        const hasExistingFile = fileInput.parentNode.querySelector('.text-success');
+        
+        if (!fileInput.files.length && !hasExistingFile && fileInput.hasAttribute('required')) {
             showFieldError(fileInput, 'File wajib diupload');
             isValid = false;
         } else {
@@ -731,6 +802,15 @@ function clearAllErrors() {
 showStep(1);
 loadFormData();
 setupAutoSave();
+
+// Enforce numeric input and length limits for NIK and NISN
+document.querySelector('input[name="nik"]').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 16);
+});
+
+document.querySelector('input[name="nisn"]').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 10);
+});
 
 // Add warning for full quota jurusan
 document.getElementById('jurusanSelect').addEventListener('change', function() {

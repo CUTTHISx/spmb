@@ -135,3 +135,50 @@
 .table-responsive::-webkit-scrollbar-thumb:hover {
     background: #555;
 }
+
+/* Verification Modal Styles */
+.btn.active {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+}
+
+.btn-outline-primary.active {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+}
+
+.btn-outline-success.active {
+    background-color: var(--bs-success);
+    border-color: var(--bs-success);
+    color: white;
+}
+
+.btn-outline-warning.active {
+    background-color: var(--bs-warning);
+    border-color: var(--bs-warning);
+    color: white;
+}
+
+.btn-outline-danger.active {
+    background-color: var(--bs-danger);
+    border-color: var(--bs-danger);
+    color: white;
+}
+
+.btn-outline-info.active {
+    background-color: var(--bs-info);
+    border-color: var(--bs-info);
+    color: white;
+}
+
+/* Action buttons in table */
+.action-cell .btn {
+    transition: all 0.2s ease;
+}
+
+.action-cell .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}

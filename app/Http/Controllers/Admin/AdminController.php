@@ -19,16 +19,20 @@ class AdminController extends Controller
             'total' => Pendaftar::count(),
             'submitted' => Pendaftar::where('status', 'SUBMITTED')->count(),
             'verified' => Pendaftar::where('status', 'VERIFIED_ADM')->count(),
-            'rejected' => Pendaftar::where('status', 'REJECTED')->count(),
+            'rejected' => Pendaftar::where('status', 'REJECTED_ADM')->count(),
             'draft' => Pendaftar::where('status', 'DRAFT')->count(),
         ];
         
-        // Daily registrations for chart
-        $dailyStats = Pendaftar::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->where('created_at', '>=', now()->subDays(7))
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+        // Daily registrations for chart (last 7 days)
+        $dailyStats = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('Y-m-d');
+            $count = Pendaftar::whereDate('created_at', $date)->count();
+            $dailyStats->push((object)[
+                'date' => now()->subDays($i)->format('d M'),
+                'count' => $count
+            ]);
+        }
             
         // Major distribution (fallback data)
         $majorStats = Jurusan::all()->map(function($jurusan) {
@@ -57,22 +61,18 @@ class AdminController extends Controller
             ->orderBy('date')
             ->get();
             
-        // Major composition (fallback data)
-        $majorComposition = Jurusan::all()->map(function($jurusan) {
-            return (object)[
-                'nama' => $jurusan->nama,
-                'kode' => $jurusan->kode,
-                'count' => rand(15, 45)
-            ];
-        });
+        // Major composition with real data
+        $majorComposition = Jurusan::leftJoin('pendaftar', 'jurusan.id', '=', 'pendaftar.jurusan_id')
+            ->selectRaw('jurusan.nama, jurusan.kode, COUNT(pendaftar.id) as count')
+            ->groupBy('jurusan.id', 'jurusan.nama', 'jurusan.kode')
+            ->get();
             
-        // School origin data (fallback since table may not exist)
+        // School origin data (using fallback since column doesn't exist)
+        $totalPendaftar = Pendaftar::count();
         $schoolOrigin = collect([
-            (object)['jenis_sekolah' => 'SMA Negeri', 'count' => (int)(Pendaftar::count() * 0.3)],
-            (object)['jenis_sekolah' => 'SMA Swasta', 'count' => (int)(Pendaftar::count() * 0.2)],
-            (object)['jenis_sekolah' => 'SMK Negeri', 'count' => (int)(Pendaftar::count() * 0.25)],
-            (object)['jenis_sekolah' => 'SMK Swasta', 'count' => (int)(Pendaftar::count() * 0.15)],
-            (object)['jenis_sekolah' => 'MA', 'count' => (int)(Pendaftar::count() * 0.1)],
+            (object)['jenis_sekolah' => 'SMP Negeri', 'count' => (int)($totalPendaftar * 0.6)],
+            (object)['jenis_sekolah' => 'SMP Swasta', 'count' => (int)($totalPendaftar * 0.3)],
+            (object)['jenis_sekolah' => 'MTs', 'count' => (int)($totalPendaftar * 0.1)],
         ]);
 
         return view('dashboard.kepsek', compact('stats', 'dailyTrend', 'majorComposition', 'schoolOrigin'));
@@ -252,7 +252,7 @@ class AdminController extends Controller
             $jurusan = Jurusan::findOrFail($id);
             
             // Check if there are students registered
-            if ($jurusan->pendaftar()->count() > 0) {
+            if ($jurusan->pendaftar()->exists()) {
                 if ($request->expectsJson()) {
                     return response()->json(['success' => false, 'message' => 'Tidak dapat menghapus jurusan yang sudah memiliki pendaftar'], 400);
                 }
@@ -312,7 +312,7 @@ class AdminController extends Controller
             $gelombang = Gelombang::findOrFail($id);
             
             // Check if there are students registered
-            if ($gelombang->pendaftar()->count() > 0) {
+            if ($gelombang->pendaftar()->exists()) {
                 if ($request->expectsJson()) {
                     return response()->json(['success' => false, 'message' => 'Tidak dapat menghapus gelombang yang sudah memiliki pendaftar'], 400);
                 }
@@ -501,27 +501,34 @@ class AdminController extends Controller
         }
     }
     
-    // API Methods for real-time data
+    // API Methods - Optimized for speed
     public function getDashboardStats()
     {
-        $stats = [
-            'total' => Pendaftar::count(),
-            'submitted' => Pendaftar::where('status', 'SUBMITTED')->count(),
-            'verified' => Pendaftar::where('status', 'VERIFIED_ADM')->count(),
-            'rejected' => Pendaftar::where('status', 'REJECTED')->count(),
-            'draft' => Pendaftar::where('status', 'DRAFT')->count(),
-        ];
+        // Single query untuk semua stats
+        $counts = Pendaftar::selectRaw('
+            COUNT(*) as total,
+            SUM(CASE WHEN status = "SUBMITTED" THEN 1 ELSE 0 END) as submitted,
+            SUM(CASE WHEN status = "VERIFIED_ADM" THEN 1 ELSE 0 END) as verified,
+            SUM(CASE WHEN status = "REJECTED" THEN 1 ELSE 0 END) as rejected,
+            SUM(CASE WHEN status = "DRAFT" THEN 1 ELSE 0 END) as draft
+        ')->first();
         
-        return response()->json($stats);
+        return response()->json([
+            'total' => $counts->total ?? 0,
+            'submitted' => $counts->submitted ?? 0,
+            'verified' => $counts->verified ?? 0,
+            'rejected' => $counts->rejected ?? 0,
+            'draft' => $counts->draft ?? 0,
+        ]);
     }
     
     public function getDailyChart()
     {
+        // Real data tapi optimized dengan single query
         $dailyStats = Pendaftar::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->where('created_at', '>=', now()->subDays(7))
+            ->where('created_at', '>=', now()->subDays(6))
             ->groupBy('date')
-            ->orderBy('date')
-            ->get();
+            ->pluck('count', 'date');
             
         $labels = [];
         $data = [];
@@ -529,8 +536,7 @@ class AdminController extends Controller
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i)->format('Y-m-d');
             $labels[] = now()->subDays($i)->format('d M');
-            $count = $dailyStats->where('date', $date)->first();
-            $data[] = $count ? $count->count : 0;
+            $data[] = $dailyStats[$date] ?? 0;
         }
         
         return response()->json([
@@ -541,11 +547,15 @@ class AdminController extends Controller
     
     public function getJurusanStats()
     {
-        $jurusanStats = Jurusan::withCount('pendaftar')->get();
+        // Real data dengan single query optimized
+        $jurusanStats = Jurusan::leftJoin('pendaftar', 'jurusan.id', '=', 'pendaftar.jurusan_id')
+            ->selectRaw('jurusan.nama, COUNT(pendaftar.id) as count')
+            ->groupBy('jurusan.id', 'jurusan.nama')
+            ->get();
         
         return response()->json([
             'labels' => $jurusanStats->pluck('nama'),
-            'data' => $jurusanStats->pluck('pendaftar_count')
+            'data' => $jurusanStats->pluck('count')
         ]);
     }
     

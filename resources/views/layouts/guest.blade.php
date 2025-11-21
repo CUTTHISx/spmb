@@ -17,13 +17,6 @@
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-md-6 col-lg-5">
-                        <div class="text-center mb-4">
-                            <a href="/" class="text-decoration-none">
-                                <i class="fas fa-graduation-cap fa-3x text-primary mb-3"></i>
-                                <h3 class="text-primary fw-bold">PPDB Online</h3>
-                            </a>
-                        </div>
-                        
                         <div class="card shadow-sm border-0">
                             <div class="card-body p-4">
                                 @yield('content')

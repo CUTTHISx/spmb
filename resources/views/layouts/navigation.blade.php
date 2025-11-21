@@ -6,7 +6,7 @@
             <div class="brand-icon me-2">
                 <i class="fas fa-graduation-cap text-primary"></i>
             </div>
-            <span class="brand-text">PPDB Online</span>
+            <span class="brand-text">SMK BAKNUS 666</span>
         </a>
 
         <!-- Mobile Toggle -->
@@ -93,11 +93,11 @@
                                 <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                             </a>
                         </li>
-                        <!-- <li class="nav-item">
-                            <a class="nav-link nav-link-custom {{ request()->is('/pendaftaran') ? 'active' : '' }}" href="/pendaftaran/form">
-                                <i class="fas fa-edit me-2"></i>Form Pendaftaran
+                        <li class="nav-item">
+                            <a class="nav-link nav-link-custom {{ request()->is('pendaftaran/pembayaran') ? 'active' : '' }}" href="/pendaftaran/pembayaran">
+                                <i class="fas fa-credit-card me-2"></i>Pembayaran
                             </a>
-                        </li> -->
+                        </li>
                     @endif
                 @endauth
             </ul>
@@ -171,12 +171,7 @@
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item" href="/profile">
-                                <i class="fas fa-user-edit me-2"></i>Edit Profile
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="#">
-                                <i class="fas fa-cog me-2"></i>Pengaturan
+                                <i class="fas fa-user me-2"></i>Profile
                             </a>
                         </li>
                         <li><hr class="dropdown-divider"></li>

@@ -82,9 +82,9 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $p->created_at->format('d M Y') }}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="/verifikator/detail/{{ $p->id }}" class="text-blue-600 hover:text-blue-900 mr-3">
-                                <i class="fas fa-eye mr-1"></i>Verifikasi
-                            </a>
+                            <x-action-button variant="primary" icon="fas fa-eye" href="/verifikator/detail/{{ $p->id }}">
+                                Verifikasi
+                            </x-action-button>
                         </td>
                     </tr>
                     @empty

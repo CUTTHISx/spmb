@@ -228,11 +228,7 @@
                             <tbody>
                                 @php
                                     $recentPendaftar = App\Models\Pendaftar::with(['user', 'jurusan', 'dataSiswa', 'dataOrtu', 'berkas'])
-                                        ->where('status', '!=', 'DRAFT')
-                                        ->where(function($q) {
-                                            $q->where('status_berkas', 'PENDING')
-                                              ->orWhere('status_data', 'PENDING');
-                                        })
+                                        ->whereIn('status', ['SUBMITTED', 'VERIFIED_ADM', 'REJECTED_ADM'])
                                         ->orderBy('created_at', 'desc')
                                         ->limit(5)
                                         ->get();

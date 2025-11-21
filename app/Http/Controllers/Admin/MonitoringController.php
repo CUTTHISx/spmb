@@ -16,7 +16,7 @@ class MonitoringController extends Controller
             
         $stats = [
             'totalPendaftar' => Pendaftar::count(),
-            'berkasLengkap' => Pendaftar::where('status', 'VERIFIED_ADM')->count(),
+            'berkasLengkap' => Pendaftar::where('status', 'ADM_PASS')->count(),
             'menungguVerifikasi' => Pendaftar::where('status', 'SUBMITTED')->count(),
             'berkasKurang' => Pendaftar::where('status', 'DRAFT')->count(),
         ];

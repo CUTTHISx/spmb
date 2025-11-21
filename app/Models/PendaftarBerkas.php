@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Services\FileUploadService;
 
 class PendaftarBerkas extends Model
 {
@@ -30,6 +29,6 @@ class PendaftarBerkas extends Model
     
     public function getFileUrlAttribute()
     {
-        return FileUploadService::getFileUrl($this->url);
+        return asset($this->url);
     }
 }

@@ -41,12 +41,17 @@
                     <div class="stat-icon bg-primary-light mx-auto mb-3">
                         <i class="fas fa-users text-primary fa-2x"></i>
                     </div>
-                    <h3 class="fw-bold text-primary">75 / 120</h3>
+                    @php 
+                        $totalKuota = \App\Models\Jurusan::sum('kuota') ?: 240;
+                        $totalPendaftar = \App\Models\Pendaftar::count();
+                        $persentase = $totalKuota > 0 ? round(($totalPendaftar / $totalKuota) * 100, 1) : 0;
+                    @endphp
+                    <h3 class="fw-bold text-primary">{{ $totalPendaftar }} / {{ $totalKuota }}</h3>
                     <p class="text-muted mb-2">Pendaftar vs Kuota</p>
                     <div class="progress mb-2" style="height: 8px;">
-                        <div class="progress-bar bg-primary" style="width: 62.5%"></div>
+                        <div class="progress-bar bg-primary" style="width: {{ min($persentase, 100) }}%"></div>
                     </div>
-                    <small class="text-success">62.5% tercapai</small>
+                    <small class="text-success">{{ $persentase }}% tercapai</small>
                 </div>
             </div>
         </div>
@@ -57,10 +62,15 @@
                     <div class="stat-icon bg-success-light mx-auto mb-3">
                         <i class="fas fa-check-circle text-success fa-2x"></i>
                     </div>
-                    <h3 class="fw-bold text-success">85%</h3>
+                    @php 
+                        $totalPendaftar = \App\Models\Pendaftar::count();
+                        $terverifikasi = \App\Models\Pendaftar::where('status', 'VERIFIED_ADM')->count();
+                        $rasioVerifikasi = $totalPendaftar > 0 ? round(($terverifikasi / $totalPendaftar) * 100, 1) : 0;
+                    @endphp
+                    <h3 class="fw-bold text-success">{{ $rasioVerifikasi }}%</h3>
                     <p class="text-muted mb-2">Rasio Terverifikasi</p>
                     <div class="progress mb-2" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: 85%"></div>
+                        <div class="progress-bar bg-success" style="width: {{ $rasioVerifikasi }}%"></div>
                     </div>
                     <small class="text-success">Target: 80%</small>
                 </div>
@@ -73,12 +83,21 @@
                     <div class="stat-icon bg-warning-light mx-auto mb-3">
                         <i class="fas fa-money-bill-wave text-warning fa-2x"></i>
                     </div>
-                    <h3 class="fw-bold text-warning">Rp 18.75M</h3>
+                    @php 
+                        $biayaDaftar = \App\Models\Gelombang::where('is_active', true)->first()->biaya_daftar ?? 250000;
+                        $pendaftarBayar = \App\Models\Pendaftar::whereHas('pembayaran', function($q) {
+                            $q->where('status_verifikasi', 'VERIFIED');
+                        })->count();
+                        $totalPemasukan = $pendaftarBayar * $biayaDaftar;
+                        $targetPemasukan = $totalKuota * $biayaDaftar;
+                        $persentasePemasukan = $targetPemasukan > 0 ? round(($totalPemasukan / $targetPemasukan) * 100, 1) : 0;
+                    @endphp
+                    <h3 class="fw-bold text-warning">Rp {{ number_format($totalPemasukan/1000000, 1) }}M</h3>
                     <p class="text-muted mb-2">Total Pemasukan</p>
                     <div class="progress mb-2" style="height: 8px;">
-                        <div class="progress-bar bg-warning" style="width: 78%"></div>
+                        <div class="progress-bar bg-warning" style="width: {{ $persentasePemasukan }}%"></div>
                     </div>
-                    <small class="text-warning">78% dari target</small>
+                    <small class="text-warning">{{ $persentasePemasukan }}% dari target</small>
                 </div>
             </div>
         </div>
@@ -89,50 +108,26 @@
                     <div class="stat-icon bg-info-light mx-auto mb-3">
                         <i class="fas fa-calendar-day text-info fa-2x"></i>
                     </div>
-                    <h3 class="fw-bold text-info">12</h3>
+                    @php 
+                        $pendaftarHariIni = \App\Models\Pendaftar::whereDate('created_at', now()->format('Y-m-d'))->count();
+                        $pendaftarKemarin = \App\Models\Pendaftar::whereDate('created_at', now()->subDay()->format('Y-m-d'))->count();
+                        $perubahanHarian = $pendaftarKemarin > 0 ? round((($pendaftarHariIni - $pendaftarKemarin) / $pendaftarKemarin) * 100) : ($pendaftarHariIni > 0 ? 100 : 0);
+                    @endphp
+                    <h3 class="fw-bold text-info">{{ $pendaftarHariIni }}</h3>
                     <p class="text-muted mb-2">Pendaftar Hari Ini</p>
                     <div class="d-flex justify-content-center">
-                        <span class="badge bg-success">+15% dari kemarin</span>
+                        <span class="badge {{ $perubahanHarian >= 0 ? 'bg-success' : 'bg-danger' }}">
+                            {{ $perubahanHarian >= 0 ? '+' : '' }}{{ $perubahanHarian }}% dari kemarin
+                        </span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Charts Section -->
+    <!-- Asal Sekolah Terbanyak -->
     <div class="row g-4 mb-4">
-        <div class="col-md-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-chart-area text-primary me-2"></i>
-                        Tren Pendaftaran 30 Hari Terakhir
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="trendChart" height="100"></canvas>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-graduation-cap text-success me-2"></i>
-                        Komposisi Jurusan
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="jurusanChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Regional Analysis -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
+        <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 py-3">
                     <h5 class="card-title mb-0 fw-bold">
@@ -142,188 +137,33 @@
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
+                        @php
+                            $topSchools = \App\Models\PendaftarAsalSekolah::select('nama_sekolah', 'kabupaten')
+                                ->selectRaw('COUNT(*) as jumlah')
+                                ->groupBy('nama_sekolah', 'kabupaten')
+                                ->orderBy('jumlah', 'desc')
+                                ->limit(5)
+                                ->get();
+                        @endphp
+                        @forelse($topSchools as $school)
                         <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
                             <div>
-                                <div class="fw-bold">SMPN 1 Cileunyi</div>
-                                <small class="text-muted">Cileunyi, Bandung</small>
+                                <div class="fw-bold">{{ $school->nama_sekolah ?: 'Tidak Diketahui' }}</div>
+                                <small class="text-muted">{{ $school->kabupaten ?: '-' }}</small>
                             </div>
-                            <span class="badge bg-primary rounded-pill">15 siswa</span>
+                            <span class="badge bg-primary rounded-pill">{{ $school->jumlah }} siswa</span>
                         </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                            <div>
-                                <div class="fw-bold">SMPN 2 Bandung</div>
-                                <small class="text-muted">Bandung Kota</small>
-                            </div>
-                            <span class="badge bg-primary rounded-pill">12 siswa</span>
+                        @empty
+                        <div class="list-group-item border-0 px-0 text-center text-muted">
+                            <i class="fas fa-info-circle me-2"></i>Belum ada data asal sekolah
                         </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                            <div>
-                                <div class="fw-bold">SMP Al-Azhar</div>
-                                <small class="text-muted">Bandung Kota</small>
-                            </div>
-                            <span class="badge bg-primary rounded-pill">10 siswa</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                            <div>
-                                <div class="fw-bold">SMPN 5 Cimahi</div>
-                                <small class="text-muted">Cimahi</small>
-                            </div>
-                            <span class="badge bg-primary rounded-pill">8 siswa</span>
-                        </div>
+                        @endforelse
                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-globe text-warning me-2"></i>
-                        Sebaran Wilayah
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="wilayahChart" height="200"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-bolt text-primary me-2"></i>
-                        Aksi Cepat
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <a href="/admin/laporan" class="quick-action-btn text-decoration-none">
-                                <i class="fas fa-file-alt text-primary fa-2x mb-2"></i>
-                                <div class="fw-bold">Laporan Lengkap</div>
-                                <small class="text-muted">Export data pendaftar</small>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="/admin/peta" class="quick-action-btn text-decoration-none">
-                                <i class="fas fa-map text-success fa-2x mb-2"></i>
-                                <div class="fw-bold">Peta Sebaran</div>
-                                <small class="text-muted">Visualisasi geografis</small>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="/keuangan/rekap" class="quick-action-btn text-decoration-none">
-                                <i class="fas fa-chart-pie text-warning fa-2x mb-2"></i>
-                                <div class="fw-bold">Analisis Keuangan</div>
-                                <small class="text-muted">Rekap pemasukan</small>
-                            </a>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="/admin/monitoring" class="quick-action-btn text-decoration-none">
-                                <i class="fas fa-eye text-info fa-2x mb-2"></i>
-                                <div class="fw-bold">Monitoring Real-time</div>
-                                <small class="text-muted">Status terkini</small>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+
 </div>
-@endsection
-
-@section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="{{ asset('js/layouts/dashboard.js') }}"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Trend Chart
-    const trendCtx = document.getElementById('trendChart').getContext('2d');
-    new Chart(trendCtx, {
-        type: 'line',
-        data: {
-            labels: Array.from({length: 30}, (_, i) => `${i+1} Nov`),
-            datasets: [{
-                label: 'Pendaftar Harian',
-                data: [2, 5, 3, 8, 6, 12, 9, 15, 11, 18, 14, 22, 19, 25, 21, 28, 24, 32, 29, 35, 31, 38, 34, 42, 39, 45, 41, 48, 44, 52],
-                borderColor: '#4361ee',
-                backgroundColor: 'rgba(67, 97, 238, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-
-    // Jurusan Chart
-    const jurusanCtx = document.getElementById('jurusanChart').getContext('2d');
-    new Chart(jurusanCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['PPLG', 'DKV', 'Akuntansi', 'Animasi', 'BDP'],
-            datasets: [{
-                data: [25, 18, 15, 12, 5],
-                backgroundColor: ['#4361ee', '#4cc9f0', '#f72585', '#4895ef', '#3f37c9'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
-
-    // Wilayah Chart
-    const wilayahCtx = document.getElementById('wilayahChart').getContext('2d');
-    new Chart(wilayahCtx, {
-        type: 'bar',
-        data: {
-            labels: ['Bandung', 'Cileunyi', 'Cimahi', 'Sumedang', 'Lainnya'],
-            datasets: [{
-                data: [35, 20, 12, 5, 3],
-                backgroundColor: ['#4361ee', '#4cc9f0', '#f72585', '#4895ef', '#3f37c9'],
-                borderRadius: 5
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-});
-</script>
 @endsection

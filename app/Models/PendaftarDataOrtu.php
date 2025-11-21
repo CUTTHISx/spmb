@@ -21,6 +21,12 @@ class PendaftarDataOrtu extends Model
         'wali_hp'
     ];
     
+    protected $casts = [
+        'hp_ayah' => 'integer',
+        'hp_ibu' => 'integer',
+        'wali_hp' => 'integer',
+    ];
+    
     public function pendaftar()
     {
         return $this->belongsTo(Pendaftar::class, 'pendaftar_id');
